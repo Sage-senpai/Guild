@@ -104,7 +104,14 @@ export type UserRecord = {
   credits: number;
 };
 
-export type CreditLedgerKind = "topup" | "run_debit" | "manual_adjustment";
+export type CreditLedgerKind =
+  | "topup"
+  | "run_debit"
+  | "manual_adjustment"
+  | "task_reserve"
+  | "task_refund"
+  | "task_earn"
+  | "task_fee";
 
 export type CreditLedgerRecord = {
   id: number;
@@ -149,4 +156,67 @@ export type ComputeResult = {
   mode: "real" | "openrouter" | "mock";
   model: string;
   providerAddress: string;
+};
+
+// ── Human Task Marketplace ──────────────────────────────────────────────────
+
+export const TASK_CATEGORIES = [
+  "testnet",
+  "discord",
+  "defi",
+  "nft",
+  "social",
+  "review",
+  "data",
+  "other",
+] as const;
+
+export type TaskCategory = (typeof TASK_CATEGORIES)[number];
+
+export type TaskType = "instant" | "apply";
+
+export type TaskStatus =
+  | "open"
+  | "assigned"
+  | "submitted"
+  | "approved"
+  | "disputed"
+  | "cancelled"
+  | "expired";
+
+export type TaskRecord = {
+  id: number;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  taskType: TaskType;
+  reward: number;
+  platformFee: number;
+  posterId: number;
+  assigneeId: number | null;
+  status: TaskStatus;
+  proofUrl: string | null;
+  deadline: string;
+  maxApplicants: number | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type TaskApplicationRecord = {
+  id: number;
+  taskId: number;
+  applicantId: number;
+  message: string | null;
+  status: "pending" | "selected" | "rejected";
+  createdAt: string;
+};
+
+export type KiltCredentialRecord = {
+  id: number;
+  userId: number;
+  credentialHash: string;
+  attestationId: string;
+  verifiedAt: string;
+  expiresAt: string | null;
+  createdAt: string;
 };

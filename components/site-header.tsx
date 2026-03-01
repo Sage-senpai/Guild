@@ -18,11 +18,11 @@ export function SiteHeader() {
             </Link>
             <nav className="hidden items-center gap-1 text-sm font-semibold md:flex">
               <Link href="/" className="rounded-full px-3 py-2 transition hover:bg-black/5">
-                Explore Agent
+                Agents
               </Link>
-              {/* <Link href="/create" className="rounded-full px-3 py-2 transition hover:bg-black/5">
-                Create Agent
-              </Link> */}
+              <Link href="/humans" className="rounded-full px-3 py-2 transition hover:bg-black/5">
+                Humans
+              </Link>
               <Link href="/credits" className="rounded-full px-3 py-2 transition hover:bg-black/5">
                 Credits
               </Link>

@@ -262,6 +262,55 @@ async function initializeSchema(db: Database): Promise<void> {
     );
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      task_type TEXT NOT NULL DEFAULT 'instant',
+      reward REAL NOT NULL,
+      platform_fee REAL NOT NULL DEFAULT 0,
+      poster_id INTEGER NOT NULL,
+      assignee_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'open',
+      proof_url TEXT,
+      deadline TEXT NOT NULL,
+      max_applicants INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completed_at TEXT,
+      FOREIGN KEY(poster_id) REFERENCES users(id),
+      FOREIGN KEY(assignee_id) REFERENCES users(id)
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS task_applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      applicant_id INTEGER NOT NULL,
+      message TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(task_id) REFERENCES tasks(id),
+      FOREIGN KEY(applicant_id) REFERENCES users(id),
+      UNIQUE(task_id, applicant_id)
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS kilt_credentials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      credential_hash TEXT NOT NULL,
+      attestation_id TEXT NOT NULL,
+      verified_at TEXT NOT NULL,
+      expires_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+  `);
+
   db.run(
     `
       INSERT OR IGNORE INTO users (id, wallet_address, credits)
