@@ -1,20 +1,36 @@
-# Guild — AI Agent Marketplace
+# Guild — AI Agent + Human Task Marketplace
 
-> **The decentralized App Store for AI agents.**
-> Create, publish, and monetize AI agents. Run any agent with credits. Built Africa-first, designed for the world.
+> **The decentralized App Store for AI agents. And a same-day task board for crypto-native humans.**
+> Built on Polkadot. Africa-first. Human-verified. Open forever.
 
-[![MVP Status](https://img.shields.io/badge/status-MVP-blue)](https://github.com)
-[![Stack](https://img.shields.io/badge/stack-Next.js%2016%20%2B%20TypeScript-black)](https://nextjs.org)
-[![Storage](https://img.shields.io/badge/storage-Arweave%20%2B%20Filecoin-green)](https://arweave.org)
-[![License](https://img.shields.io/badge/license-ISC-gray)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-MVP-blue)](https://github.com)
+[![Stack](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![Identity](https://img.shields.io/badge/Identity-KILT%20Protocol-purple)](https://kilt.io)
+[![Storage](https://img.shields.io/badge/Storage-Crust%20Network-green)](https://crust.network)
+[![Client](https://img.shields.io/badge/Chain-PAPI-pink)](https://papi.how)
 
 ---
 
 ## What Is Guild?
 
-Guild is a decentralized marketplace for AI agents. Creators publish agents — AI assistants with a purpose, a system prompt, an optional knowledge base, and a price per run. Users discover and run agents by spending credits.
+Guild has two marketplaces in one:
 
-Every agent is published with a **permanent storage proof** on Arweave or Filecoin. Agents cannot be censored or deleted. Creators own what they build.
+**[Agents]** — Creators publish AI agents (system prompt + optional knowledge file + price per run). Users discover and run them using credits. Every agent is published with a permanent storage proof on Crust Network (IPFS + Polkadot incentive layer). Agents cannot be censored.
+
+**[Humans]** — A same-day micro-task board for crypto-native work. Task posters offer credit rewards for bounded tasks: testnet runs, Discord tasks, DeFi interactions, social tasks. Workers claim or apply. Proof of Personhood (KILT credential) required — Sybil-resistant by design.
+
+---
+
+## Polkadot Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Proof of Personhood | **KILT Protocol** | W3C verifiable credentials; SocialKYC attestations on Spiritnet |
+| On-chain identity | **Polkadot People Chain** | Display name + registrar judgements (via PAPI) |
+| Decentralised storage | **Crust Network** | IPFS + Polkadot incentive layer; agent manifests + knowledge files |
+| EVM contracts | **Moonbeam** | Future: task escrow, agent NFTs (ERC-721) |
+| TypeScript client | **PAPI (`polkadot-api`)** | Type-safe, light-client first, <50kB bundle |
+| Future PoP | **DIM1 / DIM2** | Gavin Wood's ZK-based proof of personhood (Q3–Q4 2025) |
 
 ---
 
@@ -22,45 +38,30 @@ Every agent is published with a **permanent storage proof** on Arweave or Fileco
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Agent marketplace | ✅ Live | Search, filter, category browsing |
+| AI Agent Marketplace | ✅ Live | Search, filter, 8 categories, 18+ models |
 | Create & publish agents | ✅ Live | Manifest + knowledge file upload |
-| Storage proofs | ✅ Live | 0G testnet; Arweave migration in progress |
-| AI inference | ✅ Live | OpenRouter (18+ models) + 0G Compute |
-| Credit economy | ✅ Live | ETH/USDC top-up, multi-chain verification |
-| Mobile-first UI | 🔄 Redesign | New design system (this repo) |
-| SIWE authentication | 📋 Planned | Real multi-user support |
-| M-Pesa top-up | 📋 Planned | Africa fiat onramp |
-| Arweave storage | 📋 Planned | Permanent manifest storage |
-| Filecoin knowledge | 📋 Planned | Knowledge file deals |
-| Base L2 contracts | 📋 Planned | Credit registry, agent NFTs |
+| Human Task Marketplace | ✅ Live | Full task lifecycle + KILT PoP |
+| KILT PoP verification | ✅ Live | `@kiltprotocol/sdk-js` on Spiritnet |
+| Multi-chain credit top-up | ✅ Live | ETH/USDC on 6 chains |
+| Design system (teal palette) | ✅ Done | Deep Teal × Sea Green × Crimson |
+| Streaming responses | 🔄 In progress | SSE |
+| PAPI integration | 📋 Planned | People Chain identity queries |
+| Crust Network storage | 📋 Planned | Replaces 0G testnet |
+| SIWE / Substrate auth | 📋 Planned | Real multi-user support |
+| M-Pesa / MTN top-up | 📋 Planned | Africa fiat onramp |
+| Moonbeam task escrow | 📋 Roadmap | Phase 2 |
+| DIM1/DIM2 PoP | 📋 Roadmap | Polkadot native PoP (Gavin Wood's Project Individuality) |
 
 ---
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
 npm install
-```
-
-### 2. Configure environment
-
-```bash
 cp .env.example .env.local
-# Edit .env.local with your configuration
-```
-
-### 3. Run development server
-
-```bash
+# Edit .env.local
 npm run dev
-```
-
-### 4. Open in browser
-
-```
-http://localhost:3000
+# → http://localhost:3000
 ```
 
 ---
@@ -68,61 +69,59 @@ http://localhost:3000
 ## Architecture
 
 ```
-Client (React 19 + RainbowKit)
+Client (React 19 + RainbowKit / Talisman)
     ↓ HTTPS
 Next.js 16 App Router (API Routes + SSR)
     ↓
-┌──────────────┬──────────────────┬─────────────────┐
-│  SQLite DB   │  Storage Layer   │  Compute Layer  │
-│  (sql.js)    │  0G / Arweave /  │  0G Compute /   │
-│              │  Filecoin        │  OpenRouter /   │
-│              │                  │  Mock           │
-└──────────────┴──────────────────┴─────────────────┘
+┌──────────────┬────────────────────┬─────────────────┐
+│  SQLite DB   │  Polkadot Layer    │  Compute Layer  │
+│  (sql.js →  │  KILT: PoP creds  │  OpenRouter /   │
+│   Turso)    │  People: Identity  │  0G Compute /   │
+│             │  Crust: Storage    │  Mock           │
+│             │  Moonbeam: EVM     │                 │
+└──────────────┴────────────────────┴─────────────────┘
     ↓
-Multi-chain EVM (Base, ETH, Polygon, Arbitrum, 0G)
+PAPI (polkadot-api) — type-safe Substrate queries
 ```
-
-See [architecture/global-scale.md](architecture/global-scale.md) for the full production-scale design.
 
 ---
 
 ## Configuration
 
-### Storage Modes
-
-| Mode | Config | Behavior |
-|------|--------|----------|
-| Real 0G | `ZERO_G_STORAGE_MODE=real` + private key | On-chain storage proofs |
-| Arweave (planned) | `STORAGE_PROVIDER=arweave` + JWK | Permanent, pay-once |
-| Filecoin (planned) | `STORAGE_PROVIDER=filecoin` + API key | Deal-based, verifiable |
-| Mock (dev) | `ZERO_G_STORAGE_MODE=mock` | Local filesystem, no fees |
-
-### Compute Modes
-
-| Mode | Config | Behavior |
-|------|--------|----------|
-| 0G Compute | `ZERO_G_COMPUTE_MODE=real` | Decentralized inference |
-| OpenRouter | `OPENROUTER_API_KEY=<key>` | 18+ models, reliable |
-| Mock | Neither set | Pre-defined mock responses |
-
-### Required Environment Variables
+### Identity & PoP
 
 ```bash
-# Minimum for development:
-DEMO_WALLET_ADDRESS=0xYourAddress
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wc_project_id
+# KILT Protocol (Proof of Personhood)
+KILT_VERIFY_MODE=real              # "mock" for dev, "real" for production
+KILT_WSS_ADDRESS=wss://spiritnet.kilt.io
+```
 
-# For real storage:
+### Storage
+
+```bash
+# Current: 0G testnet (migration to Crust Network in progress)
 ZERO_G_STORAGE_MODE=real
-ZERO_G_PRIVATE_KEY=your_private_key
-ZERO_G_EVM_RPC=https://evmrpc-testnet.0g.ai
 ZERO_G_STORAGE_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
+ZERO_G_PRIVATE_KEY=your_private_key
 
-# For AI inference:
-OPENROUTER_API_KEY=sk-or-...
+# Planned: Crust Network
+# STORAGE_PROVIDER=crust
+# CRUST_GATEWAY=https://gw.crustfiles.app
+```
 
-# For credit top-ups:
-NEXT_PUBLIC_TOPUP_TREASURY_ADDRESS=0xYourTreasuryAddress
+### AI Compute
+
+```bash
+OPENROUTER_API_KEY=sk-or-...       # 18+ models via OpenRouter
+ZERO_G_COMPUTE_MODE=real           # Decentralised inference (optional)
+```
+
+### Minimum for development
+
+```bash
+DEMO_WALLET_ADDRESS=0xYourAddress
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wc_id
+KILT_VERIFY_MODE=mock              # No Spiritnet connection needed in dev
 ```
 
 See [.env.example](.env.example) for the full list.
@@ -131,53 +130,79 @@ See [.env.example](.env.example) for the full list.
 
 ## API Reference
 
+### Agents
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/agents` | List marketplace agents |
 | POST | `/api/agents` | Create agent draft |
-| GET | `/api/agents/:id` | Get agent detail |
-| POST | `/api/agents/:id/publish` | Publish to storage layer |
+| GET | `/api/agents/:id` | Agent detail + runs |
 | POST | `/api/agents/:id/run` | Run agent (deducts credits) |
 | GET | `/api/agents/:id/storage` | Verify storage proof |
-| POST | `/api/agents/sync-storage` | Bulk-publish drafts |
-| GET | `/api/credits` | Get credit balance + ledger |
-| POST | `/api/credits` | Create top-up order |
+
+### Human Tasks
+
+| Method | Endpoint | PoP Required |
+|--------|----------|-------------|
+| GET | `/api/tasks` | No |
+| POST | `/api/tasks` | No |
+| GET | `/api/tasks/:id` | No |
+| POST | `/api/tasks/:id/claim` | Yes |
+| POST | `/api/tasks/:id/apply` | Yes |
+| GET | `/api/tasks/:id/applicants` | No |
+| POST | `/api/tasks/:id/select/:appId` | No |
+| POST | `/api/tasks/:id/submit` | No |
+| POST | `/api/tasks/:id/approve` | No |
+| POST | `/api/tasks/:id/dispute` | No |
+| POST | `/api/tasks/:id/cancel` | No |
+
+### KILT & Credits
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/kilt/verify` | Submit KILT credential |
+| GET | `/api/kilt/status` | Check PoP status |
+| GET | `/api/credits` | Balance + ledger |
 | POST | `/api/credits/onchain` | Verify on-chain top-up tx |
-| POST | `/api/credits/:id/simulate` | Simulate webhook for demo |
-| POST | `/api/webhooks/payments` | Payment provider webhook |
-| GET | `/api/profile` | Get user profile |
-| GET | `/api/runs` | List recent runs |
 
 ---
 
 ## Project Structure
 
 ```
-ajently/
-├── app/                    # Next.js App Router
-│   ├── api/               # API route handlers
-│   ├── agents/[id]/       # Agent detail + chat pages
-│   ├── create/            # Create agent page
-│   ├── credits/           # Credits management page
-│   ├── profile/           # User profile page
-│   └── page.tsx           # Marketplace home
+guild/
+├── app/
+│   ├── api/
+│   │   ├── agents/           # Agent CRUD + run + storage
+│   │   ├── tasks/[id]/       # Human task lifecycle (11 routes)
+│   │   ├── kilt/             # KILT PoP verify + status
+│   │   └── credits/          # Credit top-up + verification
+│   ├── humans/               # Human task marketplace
+│   │   ├── page.tsx          # Task listing
+│   │   ├── post/page.tsx     # Create task form
+│   │   └── [id]/page.tsx     # Task detail
+│   ├── agents/[id]/          # Agent detail + chat
+│   ├── create/               # Create agent wizard
+│   └── page.tsx              # Agent marketplace home
 ├── components/
-│   ├── ai-elements/       # Chat UI components
-│   ├── ui/                # Base component library (Radix)
-│   └── *.tsx              # Feature components
+│   ├── task-card.tsx         # Human task card
+│   ├── task-actions-client.tsx  # Claim/apply/approve/dispute UI
+│   ├── kilt-verify-button.tsx   # PoP credential submission
+│   ├── agent-card.tsx        # Agent card
+│   └── site-header.tsx       # Nav (Agents | Humans | Credits | Profile)
 ├── lib/
-│   ├── zero-g/            # 0G Storage + Compute adapters
-│   ├── db.ts              # SQLite (sql.js) database
-│   ├── agent-service.ts   # Business logic
-│   ├── publish-agent.ts   # Publication orchestration
-│   ├── types.ts           # TypeScript types
-│   └── validation.ts      # Zod schemas
-├── audit/                 # Codebase audit documents
-├── research/              # Web3 stack research
-├── architecture/          # System architecture docs
-├── design/                # UI/UX design specifications
-├── branding/              # Brand and naming strategy
-└── docs/                  # Pitch, features, grants
+│   ├── kilt/verify.ts        # KILT verification (real + mock modes)
+│   ├── task-service.ts       # Task + KILT credential business logic
+│   ├── agent-service.ts      # Agent business logic
+│   ├── db.ts                 # sql.js SQLite
+│   ├── types.ts              # All TypeScript types
+│   └── validation.ts         # Zod schemas
+├── audit/                    # Architecture, security, tech-debt audit
+├── research/                 # Grant + bounty analysis
+├── architecture/             # System design documents
+├── design/                   # Design system specifications
+├── branding/                 # Brand and naming strategy
+└── docs/                     # Pitch, features, grants, human-marketplace spec
 ```
 
 ---
@@ -186,36 +211,30 @@ ajently/
 
 | Document | Description |
 |----------|-------------|
+| [docs/pitch.md](docs/pitch.md) | Investor pitch narrative (Polkadot-native stack) |
+| [docs/features.md](docs/features.md) | Feature specifications v2.0 |
+| [docs/grants-strategy.md](docs/grants-strategy.md) | Grant strategy ($175K–$705K target) |
+| [docs/human-marketplace.md](docs/human-marketplace.md) | Human task marketplace full spec |
 | [audit/architecture.md](audit/architecture.md) | System architecture analysis |
 | [audit/security.md](audit/security.md) | Security review + hardening checklist |
-| [audit/scalability.md](audit/scalability.md) | Scalability bottlenecks + roadmap |
-| [audit/storage-analysis.md](audit/storage-analysis.md) | Storage layer evaluation |
 | [audit/tech-debt.md](audit/tech-debt.md) | Technical debt register |
-| [research/web3-alternatives.md](research/web3-alternatives.md) | Protocol comparison matrix |
 | [research/bounty-analysis.md](research/bounty-analysis.md) | Active grants + bounties |
-| [research/recommended-stack.md](research/recommended-stack.md) | 3 recommended stack options |
-| [architecture/global-scale.md](architecture/global-scale.md) | Africa → global architecture |
-| [architecture/infrastructure-plan.md](architecture/infrastructure-plan.md) | Infra providers + migration |
-| [architecture/ai-layer.md](architecture/ai-layer.md) | AI provider abstraction + security |
-| [design/design-system.md](design/design-system.md) | Colors, typography, tokens |
+| [architecture/global-scale.md](architecture/global-scale.md) | Africa → global scale design |
+| [architecture/infrastructure-plan.md](architecture/infrastructure-plan.md) | Infra + migration plan |
+| [architecture/ai-layer.md](architecture/ai-layer.md) | AI provider abstraction |
+| [design/design-system.md](design/design-system.md) | Deep Teal / Sea Green / Crimson palette |
 | [design/component-library.md](design/component-library.md) | Component specifications |
 | [design/mobile-layout.md](design/mobile-layout.md) | Mobile screen layouts |
 | [design/desktop-layout.md](design/desktop-layout.md) | Desktop screen layouts |
-| [branding/name-options.md](branding/name-options.md) | 15 name candidates + analysis |
-| [docs/pitch.md](docs/pitch.md) | Investor pitch narrative |
-| [docs/features.md](docs/features.md) | Feature specifications |
-| [docs/grants-strategy.md](docs/grants-strategy.md) | Grant capture strategy |
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
-
-Built with the [0G Foundation hackathon](https://0g.ai) stack. Evolving toward Arweave + Filecoin + Base.
+| [branding/name-options.md](branding/name-options.md) | Name analysis (GUILD ⭐ UJUZI ⭐) |
 
 ---
 
 ## License
 
 ISC License — see [LICENSE](LICENSE).
+
+---
+
+> Built at the 0G Foundation hackathon. Evolved into a full Polkadot-native stack.
+> KILT · People Chain · Crust · Moonbeam · PAPI.

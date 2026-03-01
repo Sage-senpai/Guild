@@ -1,8 +1,8 @@
 # Guild — Pitch Deck Narrative
 
-> Version: 1.0 | February 2026
+> Version: 2.0 | March 2026
 > Stage: MVP → Seed
-> Audience: Web3 Foundation, Protocol Labs, Arbitrum DAO, early-stage VCs
+> Audience: Web3 Foundation, Polkadot Treasury, Crust/CESS, Superteam Africa, early-stage VCs
 
 ---
 
@@ -10,230 +10,181 @@
 
 ---
 
-### SLIDE 1 — The Problem
+### Slide 1 — Opening Hook
 
-**500 million people in Africa cannot access quality AI tools.**
+**"AI is eating the world. But who owns the agents?"**
 
-Not because they lack devices or data plans. Because the tools that exist:
-- Are priced in USD, billed monthly, for people earning $5/day
-- Require credit cards that 80% of Africans don't have
-- Are controlled by companies that can (and do) restrict access without notice
-- Offer no way for local builders to earn from building AI tools for their community
+Every major company is racing to build AI agents. None of them let you own, monetize, or permanently preserve what you build. If OpenAI closes your account, your agents vanish. If the API changes, your workflows break.
 
-Meanwhile, 1.4 billion people globally are creating AI agents — prompts, tools, systems — with **no marketplace to share or monetize them**.
+Guild is the App Store for AI agents — permanently stored, creator-owned, censorship-resistant. And it runs on Polkadot.
 
 ---
 
-### SLIDE 2 — The Opportunity
+### Slide 2 — Problem
 
-**AI agents are the new apps. There is no App Store for them.**
+Three broken dynamics:
 
-- OpenAI's GPT Store has 3M+ custom GPTs — but zero creator monetization
-- Hugging Face Spaces has 500K+ demos — but no payment rail
-- Character.ai has 20M users — but creators get nothing
+**For creators**: You build an AI workflow, share it, get zero revenue. Your system prompt lives in someone's closed platform and disappears the moment they change their ToS.
 
-**The AI agent economy is being built. The distribution layer doesn't exist yet.**
+**For users**: You can't discover or compare specialized AI agents. You're stuck with generic chatbots, rewriting the same prompt 100 times.
 
-Market size:
-- AI software market: $184 billion by 2030 (Grand View Research)
-- Creator economy: $480 billion by 2027 (Goldman Sachs)
-- Intersection: **AI creator tools and distribution** — underserved, fast-growing
+**For Africa**: $10/month AI subscriptions are inaccessible. No mobile money support. No local currency. No acknowledgement that 500M+ people exist.
 
 ---
 
-### SLIDE 3 — The Solution
+### Slide 3 — Solution
 
-**Guild is a decentralized marketplace for AI agents.**
+Guild is a decentralized marketplace where:
 
-Creators publish agents. Users run them. Value flows directly between them — no middleman.
+- **Creators** publish AI agents with a permanent on-chain storage proof (Crust Network / IPFS)
+- **Users** discover and run specialized agents using credits (topped up via M-Pesa, MTN Mobile Money, or USDC on Moonbeam)
+- **Workers** earn credits completing crypto-native micro-tasks (Human Task Marketplace)
+
+Everything is Polkadot-native: identity via KILT Protocol, storage via Crust Network, future contracts on Moonbeam.
+
+---
+
+### Slide 4 — Product
+
+**Two tabs. One platform.**
+
+**[Agents Tab]** — AI agent marketplace
+- 12+ demo agents live: Viral Hook Architect, Pull Request Reviewer, SQL Fixer, Brand Moodboarder...
+- Each agent: system prompt + optional knowledge file + price per run
+- 18+ AI models via OpenRouter; decentralised inference via 0G Compute
+- Storage proof on every published agent
+
+**[Humans Tab]** — Human task marketplace (new)
+- Same-day crypto micro-tasks: testnet runs, Discord tasks, DeFi interactions, social tasks
+- $0.50–$50 credit rewards
+- Proof of Personhood required (KILT credential) — Sybil-resistant by design
+- Instant-claim or apply-mode per task
+- Credits transfer atomically on approval; 48h auto-release
+
+---
+
+### Slide 5 — Why Polkadot
+
+Polkadot isn't just a chain — it's the stack that makes Guild's architecture possible.
+
+| Need | Polkadot Solution |
+|------|-------------------|
+| Proof of Personhood | **KILT Protocol** — Polkadot parachain for W3C verifiable credentials |
+| On-chain identity | **Polkadot People Chain** — system parachain (Aug 2024), identity registrars |
+| Decentralised storage | **Crust Network** — Polkadot parachain, IPFS incentive layer |
+| EVM smart contracts | **Moonbeam** — EVM-compatible parachain, XCM-connected |
+| TypeScript client | **PAPI** (`polkadot-api`) — <50kB, type-safe, light-client first |
+| Cross-chain payments | **XCM** — native Polkadot messaging, USDC on Moonbeam |
+
+The upcoming **DIM1/DIM2 (Project Individuality)** system from Gavin Wood (June 2025) will provide native ZK-based proof of personhood directly in the protocol — Guild is architected to adopt it as it launches.
+
+---
+
+### Slide 6 — Africa-First Strategy
+
+Africa is the world's youngest continent. 70% of its population is under 30. They are crypto-native, mobile-first, and excluded from traditional AI pricing.
+
+**The opportunity**:
+- 500M+ active mobile money users (M-Pesa: 50M in Kenya alone)
+- Growing developer community (Superteam Nigeria, Ghana, Kenya chapters)
+- No local-currency AI subscription products
+- Web3 adoption outpacing fiat banking infrastructure in East Africa
+
+**Guild's Africa advantage**:
+- M-Pesa STK push credit top-up (Kenya)
+- MTN Mobile Money (Ghana, Uganda, Cameroon)
+- Airtel Money (East/West Africa)
+- Human Task Marketplace creates income for crypto-native workers
+- Testnet tasks, Discord tasks, DeFi tasks — work that African users are already doing
+
+---
+
+### Slide 7 — Technology Stack
 
 ```
-Creator publishes agent:
-  → System prompt + knowledge file → stored permanently on Arweave
-  → Agent manifest → cryptographic proof of existence
-  → Listed in marketplace → discoverable by anyone
+Frontend: Next.js 16 + TypeScript + React 19
+           Design system: Deep Teal / Sea Green / Crimson (Polkadot palette)
 
-User runs agent:
-  → Pays in credits (from ETH, USDC, or mobile money)
-  → Agent runs through decentralized compute
-  → Output delivered. Credits deducted. Creator earns.
-```
+Identity:  KILT Protocol (PoP via W3C VCs on Spiritnet)
+           Polkadot People Chain (on-chain display name + registrar judgements)
+           DIM1/DIM2 — roadmap
 
-**Three properties that define Guild**:
-1. **Permanent** — agents stored on Arweave live forever; cannot be censored or deleted
-2. **Verifiable** — every agent has a storage proof; users can verify what they're running
-3. **Global** — no bank account required; top up with M-Pesa, Airtel, or any wallet
+Storage:   Crust Network (IPFS + Polkadot incentive layer)
+           Current: 0G testnet (migration planned)
 
----
+Contracts: Moonbeam EVM (task escrow Phase 2, agent NFTs Phase 3)
 
-### SLIDE 4 — Product Demo
+Client:    polkadot-api (PAPI) — type-safe, light-client, <50kB
 
-**Marketplace** — browse 50+ agents across 8 categories
-**Create** — publish an agent in 3 steps (name, prompt, price)
-**Run** — chat with any agent, debit credits in real-time
-**Credits** — top up via ETH, USDC, or M-Pesa
-**Storage Proof** — every agent links to its Arweave/Filecoin proof
-
-*[Link to live demo: https://guild.io]*
-
----
-
-### SLIDE 5 — Traction (fill in with real numbers)
-
-```
-Metric                        Value
-─────────────────────────────────────────────────────
-Agents published              [X]
-Total agent runs              [X]
-Unique wallet addresses        [X]
-Countries reached             [X]
-Hackathon prizes won          [List prizes]
-Storage proofs generated      [X]
-Average cost per run          $0.02
-```
-
----
-
-### SLIDE 6 — Why Web3
-
-1. **Creator ownership**: System prompts stored on Arweave are owned by the creator's wallet — not by Guild
-2. **Censorship resistance**: No platform can remove an agent that's on Arweave
-3. **Cross-border payments**: ETH, USDC, and native token payments work the same in Lagos, Nairobi, and New York
-4. **Composability**: Agents can be tokens; other protocols can integrate them; no permission needed
-5. **Verifiable compute**: EigenLayer AVS roadmap enables cryptographic proof that a specific model ran a specific input
-
----
-
-### SLIDE 7 — Africa-First, Global-Scale
-
-**Why Africa first?**
-- 400M+ internet users, 80% mobile-only
-- Creator economy growing 25% YoY in sub-Saharan Africa
-- 60% of Africa is under 25 — digital-native, AI-curious
-- Mobile money penetration: 48% in East Africa vs 3% for bank cards
-- Superteam Africa already active in Nigeria, Kenya, Ghana
-
-**What Africa-first means in product terms**:
-- PWA (no app store required)
-- M-Pesa, MTN Mobile Money, Airtel Money credit top-ups
-- Brotli-compressed, low-bandwidth API responses
-- Offline agent catalog browsing
-- Sub-$0.01 per agent run (accessible pricing)
-
-**Why this scales globally**: Mobile-first, low-bandwidth design is just good product. Every optimization for Africa improves the experience everywhere.
-
----
-
-### SLIDE 8 — Business Model
-
-```
-Revenue Stream        Mechanism              Margin
-─────────────────────────────────────────────────────────────
-Platform fee          5% of credit top-ups   ~95%
-Premium listings      Featured placement     100%
-Enterprise tier       Private agent hosting  70-80%
-API access (future)   Agents via API         ~90%
-Token (future)        Protocol fee in GUILD  ~100%
-```
-
-**Unit economics**:
-- Average run cost: $0.025 (compute cost to platform)
-- Average price per run: $0.03 (creator-set)
-- Platform take: 5% of top-ups = $0.005 per $0.10 credited
-- Break-even: 500 active users, 10 runs/day each
-
----
-
-### SLIDE 9 — Technology Stack
-
-```
-Layer              Technology              Why
-─────────────────────────────────────────────────────────────
-Frontend           Next.js 16 + React 19   Best DX + edge perf
-Wallet             RainbowKit + Wagmi       Multi-chain standard
-Database           Turso (libSQL edge)     Global reads <5ms
-Storage            Arweave + Filecoin      Permanent + verified
-CDN                Cloudflare              100+ Africa PoPs
-Compute            OpenRouter + 0G         Multi-model routing
-Blockchain         Base L2 (roadmap)       Low cost, high adoption
-Auth               SIWE (roadmap)          Wallet-native sessions
+Database:  sql.js → Turso (libSQL) — migration planned for multi-user support
+Auth:      SIWE / Substrate signature — planned (currently DEMO_USER_ID)
+AI:        OpenRouter (18+ models) + 0G Compute + Mock fallback
 ```
 
 ---
 
-### SLIDE 10 — Team
+### Slide 8 — Market Size
 
-```
-[Founder Name]     Background — Web3 / AI / Africa experience
-[Co-founder]       Background — Engineering / Protocol
-[Advisor]          Background — DeFi / Grants / Ecosystem
-```
+**AI Agents**: $45B market by 2030 (Grand View Research). No dominant open marketplace exists.
 
----
+**Human Micro-Tasks**: $4.2B global crowdsourcing market (rising with Web3 participation incentives).
 
-### SLIDE 11 — Roadmap
+**Africa Digital Economy**: $712B TAM by 2050 (IFC). Mobile money penetration = distribution moat.
 
-```
-Q1 2026 (Now)
-  ✓ MVP live with 0G Storage integration
-  ✓ 12+ demo agents, credit economy working
-  → Storage migration to Arweave + Filecoin
-  → SIWE authentication + user isolation
-
-Q2 2026
-  → Mobile-optimized redesign (this design system)
-  → M-Pesa / mobile money credit top-up
-  → Filecoin + Arweave grants secured
-  → ETHGlobal hackathon entry
-
-Q3 2026
-  → Base L2 credit registry contract
-  → 1,000 active users
-  → Superteam Africa partnership
-  → Arbitrum LTIPP application
-
-Q4 2026
-  → Agent-as-NFT (ERC-721 on Base)
-  → 10,000 agents published
-  → Seed round ($500K-$2M)
-  → EigenLayer verifiable inference (pilot)
-
-2027
-  → 100,000 users, 50,000 agents
-  → Multi-chain (Solana blinks)
-  → Protocol token launch
-  → Series A
-```
+**Polkadot Ecosystem**: $8B+ DOT market cap. 50+ active parachains. Web3 Foundation actively funds projects in this stack.
 
 ---
 
-### SLIDE 12 — The Ask
+### Slide 9 — Traction
 
-**Seeking: $[X] in [grants / pre-seed / seed]**
-
-Use of funds:
-```
-Engineering (3 devs × 12 months)    60%
-Growth / Africa community            20%
-Infrastructure (compute, storage)    10%
-Legal / compliance                   10%
-```
-
-**Non-dilutive grants we are pursuing**:
-- Filecoin Foundation Developer Grant ($50K)
-- Base Ecosystem Fund ($100K)
-- Arbitrum LTIPP ($200K in ARB)
-- Superteam Africa ($10K)
-- Optimism RPGF (retroactive, based on impact)
+- ✅ AI Agent Marketplace: 12+ demo agents, search, publish, run, chat
+- ✅ Human Task Marketplace: full task lifecycle, KILT PoP, credit escrow
+- ✅ Multi-chain credit top-up (ETH, USDC on 6 chains)
+- ✅ Polkadot stack: KILT SDK integrated, @kiltprotocol/sdk-js installed
+- 🔄 PAPI integration in progress
+- 🔄 Crust Network storage migration in progress
 
 ---
 
-### CONTACT
+### Slide 10 — Business Model
 
-```
-Website:  https://guild.io
-Email:    [founder@guild.io]
-Twitter:  @guildprotocol
-GitHub:   github.com/guildprotocol
-Deck:     [link]
-```
+**Platform fee**: 5% on all task rewards (task marketplace)
+**Run fee**: Creator sets price per agent run; Guild earns 0% (growth phase), 10% later
+**Credit spread**: Credits purchased at market rate; platform earns on float
+**Subscription** (future): Pro tier — unlimited runs, priority compute, analytics
+
+At scale (100K active users, $2 average monthly spend): **$200K MRR**
+
+---
+
+### Slide 11 — Grant Strategy
+
+Non-dilutive capital as primary funding path:
+
+| Funder | Target | Rationale |
+|--------|--------|-----------|
+| Web3 Foundation | $50–250K | PAPI + People Chain + KILT integration |
+| Polkadot Treasury | $50–200K DOT | Ecosystem dApp, Africa market, KILT PoP |
+| Crust Foundation | $20–80K | Primary storage partner; integration showcase |
+| Superteam Africa | $5–25K | Africa-first mobile money + micro-task economy |
+| Moonbeam Foundation | $30–100K | EVM dApp, task escrow contracts |
+| KILT Foundation | $20–50K | PoP use case, Human Marketplace showcase |
+
+Total target: **$175K–$705K** in grants over 12 months.
+
+---
+
+### Slide 12 — The Ask
+
+**$500K seed round** (alongside non-dilutive grants):
+- 40% — Engineering (PAPI, Crust storage, auth, streaming)
+- 25% — Africa market (M-Pesa/MTN integration, BD in Kenya/Nigeria)
+- 20% — Protocol partnerships (Moonbeam, Crust, KILT ecosystem)
+- 15% — Operations + legal
+
+**What we will do with it**:
+In 12 months: 10K+ active users, live in Kenya and Nigeria, Crust storage deployed, Moonbeam task escrow live, DIM1 integration when Polkadot ships it.
+
+---
+
+> Built on Polkadot. Africa-first. Human-verified. Open forever.

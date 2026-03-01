@@ -1,7 +1,8 @@
-# Infrastructure Plan — Ajently
+# Infrastructure Plan — Guild / Ajently
 
-> Document date: 2026-02-28
+> Document date: 2026-03-01
 > Phases: MVP+ → Growth → Global Scale
+> Stack: Next.js 16 · Turso · Crust Network · KILT Protocol · PAPI · Moonbeam
 
 ---
 
@@ -15,7 +16,11 @@
 | CDN + Edge | Cloudflare (Pro/Business) | 100+ Africa PoPs; R2 object storage; Workers for edge logic |
 | Database | Turso (libSQL) | Edge replicas; SQLite-compatible; horizontal reads globally |
 | Object storage | Cloudflare R2 | S3-compatible; no egress fees; global CDN |
-| Decentralized storage | Arweave + Filecoin/Lighthouse | Permanent + verifiable |
+| Decentralized storage | **Crust Network** | Polkadot parachain; IPFS + MPoW/GPoS incentive layer; XCM-native |
+| Chain client | **PAPI (`polkadot-api`)** | <50kB, type-safe descriptors, light-client first (smoldot) |
+| Identity / PoP | **KILT Protocol** | W3C verifiable credentials; SocialKYC attestations on Spiritnet |
+| On-chain identity | **Polkadot People Chain** | Display name + registrar judgements via PAPI |
+| EVM contracts (Phase 2) | **Moonbeam** | Task escrow + agent NFTs; XCM-connected to Polkadot |
 | Monitoring | Axiom + Sentry | Structured logs + error tracking |
 | RPC | Ankr / Alchemy / Infura | Multi-provider with failover |
 | Secrets | Doppler / Infisical | Environment secrets management |
@@ -62,16 +67,24 @@
               │
      ┌────────┴──────────────────────────────────────┐
      │                                               │
-  ┌──▼──────────────┐   ┌──────────────────────────┐ │
-  │  Arweave Network │   │  Filecoin / Lighthouse   │ │
-  │  Permanent       │   │  Knowledge files         │ │
-  │  manifests       │   │  IPFS retrieval          │ │
-  └─────────────────┘   └──────────────────────────┘ │
-                                                      │
-  ┌───────────────────────────────────────────────┐   │
-  │  OpenRouter API (Compute)                     │   │
-  │  Multi-model routing (18+ models)             │   │
-  └───────────────────────────────────────────────┘   │
+  ┌──▼────────────────────────────────────────────┐ │
+  │  Crust Network (Polkadot parachain)            │ │
+  │  Agent manifests + knowledge files via IPFS    │ │
+  │  MPoW + GPoS on-chain incentive layer          │ │
+  │  CID stored as storage_hash in Turso DB        │ │
+  └──┬────────────────────────────────────────────┘ │
+     │                                               │
+  ┌──▼────────────────────────────────────────────┐ │
+  │  PAPI (polkadot-api) — Polkadot client         │ │
+  │  People Chain: identity.identityOf(address)    │ │
+  │  Crust Chain:  market.filesV2(cid)             │ │
+  │  KILT SDK:     credential verification         │ │
+  └──┬────────────────────────────────────────────┘ │
+     │                                               │
+  ┌──▼───────────────────────────────────────────┐  │
+  │  OpenRouter API (Compute)                    │  │
+  │  Multi-model routing (18+ models)            │  │
+  └──────────────────────────────────────────────┘  │
 ```
 
 ---
@@ -88,10 +101,18 @@ SIWE_DOMAIN=guild.io  # or chosen domain
 TURSO_DATABASE_URL=libsql://ajently-org.turso.io
 TURSO_AUTH_TOKEN=<turso-auth-token>
 
-# ── Storage ──────────────────────────────────────────────────
-STORAGE_PROVIDER=arweave+filecoin  # or "0g" for backward compat
-ARWEAVE_JWK=<arweave-wallet-jwk-json>
-LIGHTHOUSE_API_KEY=<lighthouse-api-key>
+# ── Storage — Crust Network (Polkadot parachain) ─────────────
+STORAGE_PROVIDER=crust
+CRUST_SEED=<crust-seed-phrase>
+CRUST_GATEWAY=https://gw.crustfiles.app
+
+# ── Polkadot / PAPI ──────────────────────────────────────────
+POLKADOT_PEOPLE_RPC=wss://polkadot-people-rpc.polkadot.io
+CRUST_RPC=wss://rpc.crust.network
+
+# ── KILT Protocol ────────────────────────────────────────────
+KILT_VERIFY_MODE=real
+KILT_WSS_ADDRESS=wss://spiritnet.kilt.io
 
 # ── CDN ──────────────────────────────────────────────────────
 CLOUDFLARE_R2_ACCOUNT_ID=<account-id>
@@ -274,16 +295,15 @@ jobs:
 
 ### Backup Strategy
 - **Database**: Turso automated daily backups + point-in-time recovery (paid plan)
-- **Arweave**: Permanent by design — no backup needed
-- **Filecoin**: Deals last 18+ months; re-pin at deal expiry
-- **Cloudflare R2**: Cross-region replication enabled
+- **Crust Network**: IPFS + on-chain MPoW incentive layer; files replicated across storage nodes permanently
+- **Cloudflare R2**: Cross-region replication enabled for CDN assets
 
 ### Recovery Time Objectives
 | Component | RTO | RPO | Strategy |
 |-----------|-----|-----|----------|
 | Database | <15 min | <1 hour | Turso point-in-time restore |
 | App hosting | <5 min | 0 | Vercel rollback |
-| Storage layer | 0 (permanent) | 0 | Arweave is immutable |
+| Agent storage | 0 (permanent) | 0 | Crust/IPFS content-addressed, replicated |
 | CDN assets | <30 min | <24h | R2 cross-region |
 
 ### Runbook — Database Failure

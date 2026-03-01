@@ -6,10 +6,13 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
-  			ink: '#0d1321',
-  			flare: '#ff5d5d',
-  			mint: '#3ddc97',
-  			ember: '#f8b400',
+  			// Design system brand palette
+  			ink:   '#0E2931', // Deep Teal — primary text, dark surfaces
+  			teal:  '#12484C', // Muted Teal — secondary surfaces, nav
+  			mint:  '#2B7574', // Sea Green — interactive, success states
+  			flare: '#861211', // Crimson — accent, CTAs, alerts
+  			ember: '#f8b400', // Amber — highlights, warnings
+  			stone: '#E2E2E0', // Neutral — borders, separators
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -55,7 +58,8 @@ const config: Config = {
   			panel: 'none'
   		},
   		backgroundImage: {
-  			haze: 'radial-gradient(circle at 15% 20%, rgba(61,220,151,0.22), transparent 35%), radial-gradient(circle at 85% 10%, rgba(248,180,0,0.23), transparent 40%), linear-gradient(135deg, #f7f4ea 0%, #fffdf8 35%, #eef6ff 100%)'
+  			// Sea-green + crimson ambient glow on off-white — design system brand gradient
+  			haze: 'radial-gradient(circle at 15% 12%, rgba(43,117,116,0.18), transparent 35%), radial-gradient(circle at 85% 6%, rgba(134,18,17,0.12), transparent 40%), linear-gradient(140deg, #f6f6f4 0%, #ffffff 40%, #eef4f3 100%)'
   		},
   		keyframes: {
   			rise: {

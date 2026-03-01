@@ -38,7 +38,7 @@ function hashCredentialJson(credentialJson: string): string {
 async function verifyReal(credentialJson: string): Promise<KiltVerifyResult> {
   // Dynamic import so the package is optional until actually needed.
   // Run: npm install @kiltprotocol/sdk-js  to enable real verification.
-  const { Credential, connect, disconnect } = await import("@kiltprotocol/sdk-js").catch(() => {
+  const { Verifier, connect, disconnect } = await import("@kiltprotocol/sdk-js").catch(() => {
     throw new Error(
       "KILT SDK not installed. Run: npm install @kiltprotocol/sdk-js\n" +
         "Or set KILT_VERIFY_MODE=mock for development.",
@@ -50,14 +50,20 @@ async function verifyReal(credentialJson: string): Promise<KiltVerifyResult> {
 
   await connect(wssAddress);
   try {
-    const credential = Credential.fromJSON(JSON.parse(credentialJson));
-    const { verified, claimerDid, attesterDid } = await Credential.verify(credential);
+    // KILT SDK v1.x: credential is a W3C VerifiableCredential JSON-LD object.
+    const credential = JSON.parse(credentialJson) as Record<string, unknown>;
+    const result = await Verifier.verifyCredential({ credential: credential as unknown as Parameters<typeof Verifier.verifyCredential>[0]["credential"] });
+
+    // Claimer = credentialSubject.id (W3C VC standard field); attester = issuer.
+    const credSubject = credential.credentialSubject as Record<string, unknown> | undefined;
+    const claimerDid = String(credSubject?.id ?? credential.holder ?? "");
+    const attesterDid = String(credential.issuer ?? "");
 
     return {
-      valid: verified,
+      valid: result.verified,
       credentialHash: hashCredentialJson(credentialJson),
-      claimerDid: claimerDid ?? "",
-      attesterDid: attesterDid ?? "",
+      claimerDid,
+      attesterDid,
     };
   } finally {
     await disconnect();
