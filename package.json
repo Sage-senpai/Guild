@@ -68,8 +68,10 @@
     "wagmi": "^2.19.5",
     "zod": "^3.25.76"
   },
+  "optionalDependencies": {
+    "@next/swc-win32-x64-msvc": "15.5.12"
+  },
   "devDependencies": {
-    "@next/swc-win32-x64-msvc": "^15.5.12",
     "@types/node": "^25.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
