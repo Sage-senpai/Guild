@@ -4,10 +4,8 @@ export const dynamic = "force-dynamic";
 
 export default function CreditsPage() {
   return (
-    <main>
-      <div>
-        <CreditsClient />
-      </div>
+    <main className="mx-auto max-w-3xl">
+      <CreditsClient />
     </main>
   );
 }

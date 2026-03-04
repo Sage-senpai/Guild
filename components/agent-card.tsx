@@ -6,44 +6,51 @@ import type { AgentRecord } from "@/lib/types";
 
 export function AgentCard({ agent }: { agent: AgentRecord }) {
   return (
-    <article className="glass animate-rise rounded-2xl p-5 shadow-panel">
-      <div className="mb-3 flex items-center justify-between gap-4">
+    <article className="card-surface group flex flex-col p-5">
+      {/* Header row */}
+      <div className="mb-4 flex items-start gap-3">
+        {/* Avatar */}
         <div
-          className="h-12 w-12 rounded-full border border-ink/15 bg-cover bg-center"
-          style={{
-            backgroundImage: cardBackgroundImage(agent.cardImageDataUrl, agent.cardGradient),
-          }}
+          className="h-11 w-11 shrink-0 rounded-xl border border-stone/30 bg-cover bg-center"
+          style={{ backgroundImage: cardBackgroundImage(agent.cardImageDataUrl, agent.cardGradient) }}
         />
-        <div className="flex flex-col items-end gap-1 text-right">
-          <span className="rounded-full bg-ink/5 px-2 py-1 text-xs font-semibold">
-            {agent.category}
-          </span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${
-              agent.published ? "bg-mint/25 text-ink" : "bg-ember/20 text-ink"
-            }`}
-          >
-            {agent.published ? "Published" : "Draft"}
-          </span>
-          <span className="font-[var(--font-mono)] text-xs">
-            {formatUsd(agent.pricePerRun)} / run
-          </span>
+        {/* Meta */}
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5">
+            <span className="tag">{agent.category}</span>
+            {agent.published ? (
+              <span className="tag" style={{ color: "#2B7574", borderColor: "rgba(43,117,116,0.3)", background: "rgba(43,117,116,0.08)" }}>
+                Live
+              </span>
+            ) : (
+              <span className="tag" style={{ color: "#861211", borderColor: "rgba(134,18,17,0.25)", background: "rgba(134,18,17,0.07)" }}>
+                Draft
+              </span>
+            )}
+          </div>
+          <p className="font-mono text-xs text-ink/50">{formatUsd(agent.pricePerRun)} / run</p>
         </div>
       </div>
-      <h3 className="mb-2 text-xl font-bold leading-tight">{agent.name}</h3>
-      <p className="muted mb-4 text-sm">{agent.description}</p>
-      <div className="flex items-center gap-2">
-        <Link
-          href={`/agents/${agent.id}`}
-          className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5"
-        >
-          View Details
-        </Link>
+
+      {/* Content */}
+      <h3 className="mb-1.5 text-lg font-bold leading-snug text-ink">{agent.name}</h3>
+      <p className="mb-5 line-clamp-2 flex-1 text-sm leading-relaxed text-ink/55">
+        {agent.description}
+      </p>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 pt-1">
         <Link
           href={`/agents/${agent.id}/chat`}
-          className="rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold transition hover:bg-ink/5"
+          className="flex-1 rounded-xl bg-ink py-2 text-center text-sm font-semibold text-white transition hover:bg-teal"
         >
           Run Agent
+        </Link>
+        <Link
+          href={`/agents/${agent.id}`}
+          className="rounded-xl border border-stone px-4 py-2 text-sm font-semibold text-ink/70 transition hover:border-ink/30 hover:text-ink"
+        >
+          Details
         </Link>
       </div>
     </article>

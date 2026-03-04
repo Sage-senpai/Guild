@@ -24,112 +24,163 @@ export default async function ProfilePage() {
   if (!user) {
     return (
       <main>
-        <p>User profile not found.</p>
+        <div className="panel p-10 text-center">
+          <p className="text-ink/60">User profile not found.</p>
+        </div>
       </main>
     );
   }
 
   return (
     <main className="space-y-6">
-      <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-flare">Profile</p>
-        <h1 className="text-3xl font-black">Creator Wallet</h1>
-        <p className="muted mt-2 text-sm">Wallet: {user.walletAddress}</p>
-        <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
-          <p>
-            <span className="font-semibold">Remaining:</span> {formatCredits(user.credits)}
+      {/* Identity card */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink to-teal p-6 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_60%_at_90%_10%,rgba(134,18,17,0.2),transparent)]"
+        />
+        <div className="relative">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/50">
+            Guild Member
           </p>
-          <p>
-            <span className="font-semibold">Used:</span> {formatCredits(creditStats.used)}
-          </p>
-          <p>
-            <span className="font-semibold">Topped Up:</span> {formatCredits(creditStats.toppedUp)}
-          </p>
-        </div>
-        <div className="mt-4">
-          <Link
-            href="/credits"
-            className="rounded-full border border-ink/20 px-3 py-1 text-sm font-semibold hover:bg-ink/5"
-          >
-            Open Credits & Top-Up
-          </Link>
+          <h1 className="font-display text-3xl font-bold text-white">Your Profile</h1>
+          <p className="mt-2 font-mono text-xs text-white/50 break-all">{user.walletAddress}</p>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Available", value: formatCredits(user.credits) },
+              { label: "Used", value: formatCredits(creditStats.used) },
+              { label: "Topped Up", value: formatCredits(creditStats.toppedUp) },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3"
+              >
+                <p className="text-xs font-medium text-white/50">{label}</p>
+                <p className="mt-0.5 text-lg font-bold text-white">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5">
+            <Link
+              href="/credits"
+              className="inline-flex rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-chalk"
+            >
+              Top Up Credits
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
-        <h2 className="text-xl font-bold">Recent Credit Activity</h2>
+      {/* Recent credit activity */}
+      <section className="panel p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-ink">Recent Credit Activity</h2>
         {ledger.length === 0 ? (
-          <p className="muted mt-2 text-sm">No credit activity yet.</p>
+          <p className="muted text-sm">No credit activity yet.</p>
         ) : (
-          <div className="mt-3 space-y-2">
+          <div className="space-y-2">
             {ledger.map((entry) => (
-              <article key={entry.id} className="rounded-2xl border border-ink/15 bg-white/70 p-3 text-sm">
-                <p>
-                  <span className="font-semibold">{entry.kind}</span> |{" "}
+              <article
+                key={entry.id}
+                className="flex items-center justify-between rounded-xl border border-ink/8 bg-chalk/60 px-4 py-3 text-sm"
+              >
+                <div>
+                  <span className="font-semibold capitalize text-ink">{entry.kind}</span>
+                  <p className="muted text-xs">{formatDate(entry.createdAt)}</p>
+                </div>
+                <span
+                  className={`font-mono text-sm font-bold ${entry.amount > 0 ? "text-teal" : "text-flare"}`}
+                >
                   {entry.amount > 0 ? "+" : ""}
                   {formatCredits(entry.amount)}
-                </p>
-                <p className="muted text-xs">{formatDate(entry.createdAt)}</p>
+                </span>
               </article>
             ))}
           </div>
         )}
       </section>
 
-      <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
-        <h2 className="text-xl font-bold">Top-Up Orders</h2>
+      {/* Top-up orders */}
+      <section className="panel p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-ink">Top-Up Orders</h2>
         {topups.length === 0 ? (
-          <p className="muted mt-2 text-sm">No top-up orders yet.</p>
+          <p className="muted text-sm">No top-up orders yet.</p>
         ) : (
-          <div className="mt-3 space-y-2">
+          <div className="space-y-2">
             {topups.map((order) => (
-              <article key={order.id} className="rounded-2xl border border-ink/15 bg-white/70 p-3 text-sm">
-                <p>
-                  <span className="font-semibold">#{order.id}</span> | {order.rail} |{" "}
-                  {order.currency} {formatCredits(order.amount)} | {order.status}
-                </p>
-                <p className="muted text-xs">{formatDate(order.createdAt)}</p>
+              <article
+                key={order.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/8 bg-chalk/60 px-4 py-3 text-sm"
+              >
+                <div>
+                  <span className="font-semibold text-ink">Order #{order.id}</span>
+                  <p className="muted text-xs">
+                    {order.rail} · {order.currency} · {formatDate(order.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-teal">{formatCredits(order.amount)}</span>
+                  <span
+                    className={`tag text-[10px] uppercase tracking-wide ${
+                      order.status === "completed"
+                        ? "bg-mint/20 text-teal"
+                        : order.status === "pending"
+                          ? "bg-ink/10 text-ink"
+                          : "bg-flare/15 text-flare"
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                </div>
               </article>
             ))}
           </div>
         )}
       </section>
 
-      <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
+      {/* Your agents */}
+      <section className="panel p-6 sm:p-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Your Agents</h2>
+          <h2 className="text-lg font-bold text-ink">Your Agents</h2>
           <Link
             href="/create"
-            className="rounded-full border border-ink/20 px-3 py-1 text-sm font-semibold hover:bg-ink/5"
+            className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal"
           >
             New Agent
           </Link>
         </div>
         {agents.length === 0 ? (
-          <p className="muted text-sm">No agents yet.</p>
+          <p className="muted text-sm">No agents yet. Create your first AI agent.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {agents.map((agent) => (
               <article
                 key={agent.id}
-                className="rounded-2xl border border-ink/15 bg-white/70 p-3 text-sm"
+                className="card-surface p-4"
               >
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{agent.name}</p>
-                  <span className="font-[var(--font-mono)] text-xs">
-                    {formatUsd(agent.pricePerRun)} / run
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <p className="font-semibold text-ink">{agent.name}</p>
+                  <span className="font-mono text-xs text-ink/50">
+                    {formatUsd(agent.pricePerRun)}/run
                   </span>
                 </div>
-                <p className="muted mb-2">{agent.description}</p>
-                <p className="mb-2 text-xs">
-                  {agent.published ? "Published" : "Draft"} | {formatDate(agent.createdAt)}
-                </p>
-                <Link
-                  href={`/agents/${agent.id}`}
-                  className="rounded-full border border-ink/20 px-3 py-1 text-xs font-semibold hover:bg-ink/5"
-                >
-                  Open
-                </Link>
+                <p className="muted mb-3 text-xs leading-relaxed line-clamp-2">{agent.description}</p>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`tag text-[10px] uppercase tracking-wide ${
+                      agent.published ? "bg-mint/20 text-teal" : "bg-ink/10 text-ink/60"
+                    }`}
+                  >
+                    {agent.published ? "Published" : "Draft"}
+                  </span>
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className="rounded-lg border border-ink/20 px-3 py-1 text-xs font-semibold transition hover:bg-ink/5"
+                  >
+                    Open
+                  </Link>
+                </div>
               </article>
             ))}
           </div>

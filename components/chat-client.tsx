@@ -81,7 +81,7 @@ function createSession(seedText?: string): ChatSession {
 }
 
 function sessionStorageKey(agentId: number): string {
-  return `ajently-chat-sessions:${agentId}`;
+  return `guild-chat-sessions:${agentId}`;
 }
 
 export function ChatClient({

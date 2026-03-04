@@ -5,7 +5,7 @@ import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
 
 import { DATA_DIR, resolveDataPath } from "@/lib/data-dir";
 
-const DB_PATH = resolveDataPath("Ajently.sqlite");
+const DB_PATH = resolveDataPath("guild.sqlite");
 
 const MODEL_MIGRATIONS: ReadonlyArray<readonly [from: string, to: string]> = [
   ["deepseek/deepseek-r1:free", "deepseek/deepseek-r1-0528:free"],
@@ -361,7 +361,7 @@ function seedDemoAgents(db: Database): void {
           `,
           [
             `demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-hash`,
-            `0g://demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-manifest`,
+            `ipfs://demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-manifest`,
             `demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-tx`,
             existing.id,
           ],
@@ -375,7 +375,7 @@ function seedDemoAgents(db: Database): void {
         agent.model,
         agent.systemPrompt,
         `demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-hash`,
-        `0g://demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-manifest`,
+        `ipfs://demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-manifest`,
         `demo-${agent.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-tx`,
         agent.pricePerRun,
         agent.cardGradient,

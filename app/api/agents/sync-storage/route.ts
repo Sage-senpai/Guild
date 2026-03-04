@@ -11,7 +11,7 @@ export async function POST() {
     return NextResponse.json(result, { status: hasFailures ? 207 : 200 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to sync agents to 0G Storage" },
+      { error: error instanceof Error ? error.message : "Failed to sync agents to storage" },
       { status: 500 },
     );
   }

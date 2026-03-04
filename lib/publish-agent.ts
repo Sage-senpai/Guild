@@ -7,7 +7,7 @@ import {
   uploadKnowledge,
   uploadManifest,
   type UploadResult,
-} from "@/lib/zero-g/storage";
+} from "@/lib/storage";
 
 type PublishAgentOptions = {
   requireRealStorageProof?: boolean;
@@ -16,7 +16,7 @@ type PublishAgentOptions = {
 export async function publishAgent(agentId: number): Promise<{
   agent: AgentRecord;
   manifest: AgentManifest;
-  storageMode: "real" | "mock";
+  storageMode: "crust" | "mock";
   uploadProof: {
     manifest: UploadResult;
     knowledge: UploadResult | null;
@@ -31,13 +31,13 @@ export async function publishAgentWithOptions(
 ): Promise<{
   agent: AgentRecord;
   manifest: AgentManifest;
-  storageMode: "real" | "mock";
+  storageMode: "crust" | "mock";
   uploadProof: {
     manifest: UploadResult;
     knowledge: UploadResult | null;
   };
 }> {
-  const requireRealStorageProof = options.requireRealStorageProof ?? true;
+  const requireRealStorageProof = options.requireRealStorageProof ?? false;
   if (requireRealStorageProof) {
     const configError = getRealStorageConfigError();
     if (configError) {
@@ -57,13 +57,13 @@ export async function publishAgentWithOptions(
 
   let knowledgeUri: string | null = null;
   let knowledgeUpload: UploadResult | null = null;
-  let mode: "real" | "mock" = "mock";
+  let mode: "crust" | "mock" = "mock";
 
   if (agent.knowledgeLocalPath) {
     const bytes = await fs.readFile(agent.knowledgeLocalPath);
     knowledgeUpload = await uploadKnowledge(bytes, { requireReal: requireRealStorageProof });
-    if (requireRealStorageProof && (knowledgeUpload.mode !== "real" || !knowledgeUpload.transactionHash)) {
-      throw new Error("Knowledge file was not uploaded to real 0G Storage with a transaction hash");
+    if (requireRealStorageProof && knowledgeUpload.mode !== "crust") {
+      throw new Error("Knowledge file was not uploaded to Crust Network storage");
     }
     knowledgeUri = knowledgeUpload.uri;
     mode = knowledgeUpload.mode;
@@ -81,8 +81,8 @@ export async function publishAgentWithOptions(
   };
 
   const manifestUpload = await uploadManifest(manifest, { requireReal: requireRealStorageProof });
-  if (requireRealStorageProof && (manifestUpload.mode !== "real" || !manifestUpload.transactionHash)) {
-    throw new Error("Manifest was not uploaded to real 0G Storage with a transaction hash");
+  if (requireRealStorageProof && manifestUpload.mode !== "crust") {
+    throw new Error("Manifest was not uploaded to Crust Network storage");
   }
   mode = manifestUpload.mode;
 
@@ -132,21 +132,17 @@ export async function publishAgentsMissingStorageProof(): Promise<{
           continue;
         }
         try {
-          await publishAgentWithOptions(agent.id, { requireRealStorageProof: true });
+          await publishAgentWithOptions(agent.id, { requireRealStorageProof: false });
           published += 1;
         } catch (error) {
           failed.push({
             agentId: agent.id,
-            error: error instanceof Error ? error.message : "Failed to publish agent to 0G Storage",
+            error: error instanceof Error ? error.message : "Failed to publish agent to storage",
           });
         }
       }
 
-      return {
-        checked: agents.length,
-        published,
-        failed,
-      };
+      return { checked: agents.length, published, failed };
     })().finally(() => {
       syncPromise = null;
     });

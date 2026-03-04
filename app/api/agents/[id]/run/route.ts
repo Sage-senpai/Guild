@@ -7,8 +7,8 @@ import {
   runAgentForUser,
 } from "@/lib/agent-service";
 import { runAgentSchema } from "@/lib/validation";
-import { runInference } from "@/lib/zero-g/compute";
-import { downloadText } from "@/lib/zero-g/storage";
+import { runInference } from "@/lib/compute";
+import { downloadText } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -40,19 +40,12 @@ export async function POST(
   try {
     if (agent.knowledgeUri) {
       knowledge = await downloadText(agent.knowledgeUri);
-    } else if (agent.published && agent.knowledgeLocalPath) {
-      return NextResponse.json(
-        { error: "Published agent is missing a 0G knowledge URI" },
-        { status: 500 },
-      );
     } else if (agent.knowledgeLocalPath) {
       knowledge = await readKnowledgeFromLocal(agent);
     }
   } catch (error) {
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to load knowledge from storage",
-      },
+      { error: error instanceof Error ? error.message : "Failed to load knowledge from storage" },
       { status: 500 },
     );
   }
@@ -67,7 +60,7 @@ export async function POST(
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "0G compute call failed" },
+      { error: error instanceof Error ? error.message : "Inference call failed" },
       { status: 500 },
     );
   }

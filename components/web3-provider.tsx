@@ -4,35 +4,16 @@ import "@rainbow-me/rainbowkit/styles.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { defineChain } from "viem";
 import { WagmiProvider } from "wagmi";
 import {
   arbitrum,
   base,
   mainnet,
+  moonbaseAlpha,
+  moonbeam,
   optimism,
   polygon,
-  zeroGMainnet,
 } from "wagmi/chains";
-
-const zeroGGalileoTestnet = defineChain({
-  id: 16602,
-  name: "0G-Testnet-Galileo",
-  nativeCurrency: { name: "OG", symbol: "OG", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: ["https://evmrpc-testnet.0g.ai"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "0G BlockChain Explorer",
-      url: "https://chainscan-galileo.0g.ai/",
-    },
-  },
-  testnet: true,
-});
-
 
 const projectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ||
@@ -45,7 +26,7 @@ if (!process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim()) {
 }
 
 const config = getDefaultConfig({
-  appName: "Ajently",
+  appName: "Guild",
   projectId,
   chains: [
     mainnet,
@@ -53,8 +34,8 @@ const config = getDefaultConfig({
     optimism,
     arbitrum,
     base,
-    zeroGMainnet,
-    zeroGGalileoTestnet,
+    moonbeam,
+    moonbaseAlpha,
   ],
   ssr: true,
 });

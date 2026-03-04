@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { getAgentById } from "@/lib/agent-service";
-import { downloadText } from "@/lib/zero-g/storage";
+import { downloadText } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-function rootHashFromUri(uri: string): string {
-  return uri.startsWith("0g://") ? uri.slice("0g://".length) : uri;
+function cidFromUri(uri: string): string {
+  if (uri.startsWith("ipfs://")) return uri.slice("ipfs://".length);
+  if (uri.startsWith("0g://")) return uri.slice("0g://".length);
+  return uri;
 }
 
 function toPreview(content: string): string {
@@ -32,16 +34,10 @@ export async function GET(
   if (!agent.manifestUri || !agent.storageHash) {
     return NextResponse.json({ error: "Agent has not been published to storage" }, { status: 400 });
   }
-  if (!agent.manifestTxHash) {
-    return NextResponse.json(
-      { error: "Agent is missing 0G manifest transaction proof" },
-      { status: 400 },
-    );
-  }
 
   try {
     const manifestRaw = await downloadText(agent.manifestUri);
-    const manifestRootHash = rootHashFromUri(agent.manifestUri);
+    const manifestRootHash = cidFromUri(agent.manifestUri);
 
     let manifestJson: Record<string, unknown> | null = null;
     try {
@@ -62,7 +58,7 @@ export async function GET(
       const knowledgeRaw = await downloadText(agent.knowledgeUri);
       knowledgeProof = {
         uri: agent.knowledgeUri,
-        rootHash: rootHashFromUri(agent.knowledgeUri),
+        rootHash: cidFromUri(agent.knowledgeUri),
         transactionHash: agent.knowledgeTxHash,
         bytes: Buffer.byteLength(knowledgeRaw, "utf-8"),
         preview: toPreview(knowledgeRaw),
@@ -85,10 +81,7 @@ export async function GET(
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to retrieve data from storage",
-      },
+      { error: error instanceof Error ? error.message : "Failed to retrieve data from storage" },
       { status: 500 },
     );
   }

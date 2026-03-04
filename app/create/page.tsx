@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -57,7 +59,7 @@ export default function CreateAgentPage() {
     if (created) {
       setStatus(
         published
-          ? "Agent created and published to 0G Storage."
+          ? "Agent created and published to decentralized storage."
           : "Agent created as draft. Publish it from the agent details page.",
       );
       if (cardImagePreviewUrl) {
@@ -83,7 +85,7 @@ export default function CreateAgentPage() {
         </p>
         <h1 className="text-3xl font-black">Create New Agent</h1>
         <p className="muted mt-2">
-          Define the agent behavior, attach optional knowledge, then publish to 0G Storage.
+          Define the agent behavior, attach optional knowledge, then publish to decentralized storage.
         </p>
       </section>
 

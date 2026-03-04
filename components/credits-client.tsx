@@ -12,7 +12,6 @@ import {
 } from "wagmi";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { formatCredits } from "@/lib/format";
 import type { CreditLedgerRecord, TopupOrderRecord } from "@/lib/types";
 
@@ -190,60 +189,58 @@ export function CreditsClient() {
   }
 
   if (loading) {
-    return <p className="text-sm">Loading credits...</p>;
+    return (
+      <div className="panel flex items-center justify-center py-16">
+        <p className="muted text-sm">Loading credits...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-ink/15 bg-white/70 p-5">
-        <h1 className="text-3xl font-black">Credits</h1>
-        <p className="muted mt-2 text-sm">
-          Fund your account from your connected chain wallet, or continue with stablecoin/fiat checkout.
+      {/* Balance overview */}
+      <div className="panel p-5">
+        <h1 className="font-display text-2xl font-bold text-ink">Credits</h1>
+        <p className="muted mt-1 text-sm">
+          Fund your account onchain, with stablecoins, or via fiat checkout.
         </p>
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-          <p>
-            <span className="font-semibold">Remaining:</span>{" "}
-            {formatCredits(state?.stats.remaining ?? 0)}
-          </p>
-          <p>
-            <span className="font-semibold">Used:</span> {formatCredits(state?.stats.used ?? 0)}
-          </p>
-          <p>
-            <span className="font-semibold">Topped Up:</span> {formatCredits(state?.stats.toppedUp ?? 0)}
-          </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Available", value: formatCredits(state?.stats.remaining ?? 0) },
+            { label: "Used", value: formatCredits(state?.stats.used ?? 0) },
+            { label: "Topped Up", value: formatCredits(state?.stats.toppedUp ?? 0) },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-xl border border-ink/10 bg-chalk px-4 py-3">
+              <p className="text-xs font-medium text-ink/50">{label}</p>
+              <p className="mt-0.5 text-lg font-bold text-ink">{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      <Separator />
-
-      <section className="rounded-2xl border border-ink/15 bg-white/70 p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">Add Funds</h2>
-          <div className="inline-flex rounded-xl border border-ink/15 bg-white p-1 text-sm">
+      {/* Add funds */}
+      <section className="panel p-5">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-ink">Add Funds</h2>
+          <div className="inline-flex rounded-xl border border-ink/15 bg-chalk p-1 text-sm">
             <button
               type="button"
               onClick={() => setRail("native")}
-              className={`rounded-lg px-3 py-1.5 ${rail === "native" ? "bg-ink text-white" : "hover:bg-ink/5"}`}
+              className={`rounded-lg px-3 py-1.5 font-medium transition ${rail === "native" ? "bg-ink text-white" : "hover:bg-ink/8"}`}
             >
               Onchain
             </button>
             <button
               type="button"
-              onClick={() => {
-                setRail("stablecoin");
-                setOffchainCurrency("USDC");
-              }}
-              className={`rounded-lg px-3 py-1.5 ${rail === "stablecoin" ? "bg-ink text-white" : "hover:bg-ink/5"}`}
+              onClick={() => { setRail("stablecoin"); setOffchainCurrency("USDC"); }}
+              className={`rounded-lg px-3 py-1.5 font-medium transition ${rail === "stablecoin" ? "bg-ink text-white" : "hover:bg-ink/8"}`}
             >
               Stablecoin
             </button>
             <button
               type="button"
-              onClick={() => {
-                setRail("fiat");
-                setOffchainCurrency("USD");
-              }}
-              className={`rounded-lg px-3 py-1.5 ${rail === "fiat" ? "bg-ink text-white" : "hover:bg-ink/5"}`}
+              onClick={() => { setRail("fiat"); setOffchainCurrency("USD"); }}
+              className={`rounded-lg px-3 py-1.5 font-medium transition ${rail === "fiat" ? "bg-ink text-white" : "hover:bg-ink/8"}`}
             >
               Fiat
             </button>
@@ -251,18 +248,18 @@ export function CreditsClient() {
         </div>
 
         {rail === "native" ? (
-          <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
-            <div className="space-y-3">
-              <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-[1.25fr_1fr]">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {QUICK_ADD_AMOUNTS.map((quickAmount) => (
                   <button
                     key={quickAmount}
                     type="button"
                     onClick={() => setAmount(quickAmount)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                    className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
                       amount === quickAmount
                         ? "border-ink bg-ink text-white"
-                        : "border-ink/20 bg-white hover:bg-ink/5"
+                        : "border-ink/20 bg-white hover:border-teal hover:bg-teal/5"
                     }`}
                   >
                     {quickAmount} {nativeSymbol}
@@ -270,8 +267,10 @@ export function CreditsClient() {
                 ))}
               </div>
 
-              <div className="rounded-xl border border-ink/20 bg-white p-3">
-                <label className="mb-1 block text-sm font-semibold">Custom Amount</label>
+              <div className="rounded-xl border border-ink/15 bg-white p-3">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/50">
+                  Custom Amount
+                </label>
                 <div className="flex items-center gap-2">
                   <input
                     value={amount}
@@ -279,10 +278,10 @@ export function CreditsClient() {
                     type="number"
                     min={0}
                     step="0.0001"
-                    className="w-full rounded-xl border border-ink/20 px-3 py-2 text-sm"
-                    placeholder="Enter amount"
+                    className="w-full rounded-lg border border-ink/15 bg-chalk px-3 py-2 text-sm focus:border-teal focus:outline-none"
+                    placeholder="0.00"
                   />
-                  <span className="text-sm font-semibold">{nativeSymbol}</span>
+                  <span className="shrink-0 text-sm font-semibold text-ink">{nativeSymbol}</span>
                 </div>
               </div>
 
@@ -292,33 +291,27 @@ export function CreditsClient() {
                 disabled={fundingOnchain || !isConnected}
                 onClick={addFundsFromWallet}
               >
-                {fundingOnchain ? "Confirming onchain top-up..." : `Add ${amount || "0"} ${nativeSymbol}`}
+                {fundingOnchain ? "Confirming..." : `Add ${amount || "0"} ${nativeSymbol}`}
               </Button>
             </div>
 
-            <aside className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
-              <p className="mb-2 font-semibold">How it works</p>
-              <p className="mb-1">1. We send a native-token transfer from your wallet to the top-up treasury.</p>
-              <p className="mb-1">2. The backend verifies the tx hash on your active chain before crediting.</p>
-              <p>3. Credits are added immediately after onchain confirmation.</p>
-              <div className="mt-3 space-y-1 rounded-xl bg-white/80 p-3 text-xs">
+            <aside className="rounded-2xl border border-teal/20 bg-teal/5 p-4 text-sm">
+              <p className="mb-3 font-semibold text-teal">How it works</p>
+              <ol className="space-y-1.5 text-ink/70">
+                <li>1. Send native tokens from your wallet to our treasury.</li>
+                <li>2. Backend verifies the tx hash on-chain before crediting.</li>
+                <li>3. Credits appear after block confirmation.</li>
+              </ol>
+              <div className="mt-4 space-y-1 rounded-xl border border-ink/10 bg-white/60 p-3 font-mono text-xs text-ink/60">
+                <p><span className="font-semibold not-italic text-ink">Chain:</span> {activeChain?.name ?? "Not detected"}</p>
+                <p><span className="font-semibold not-italic text-ink">Wallet:</span> {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Not connected"}</p>
                 <p>
-                  <span className="font-semibold">Active chain:</span> {activeChain?.name ?? "Not detected"}
+                  <span className="font-semibold not-italic text-ink">Balance:</span>{" "}
+                  {nativeBalance ? `${Number(nativeBalance.formatted).toFixed(4)} ${nativeBalance.symbol}` : "–"}
                 </p>
-                <p>
-                  <span className="font-semibold">Wallet:</span> {address ?? "Not connected"}
-                </p>
-                <p>
-                  <span className="font-semibold">Balance:</span>{" "}
-                  {nativeBalance ? `${Number(nativeBalance.formatted).toFixed(4)} ${nativeBalance.symbol}` : "-"}
-                </p>
-                <p className="break-all">
-                  <span className="font-semibold">Treasury:</span> {TOPUP_TREASURY_ADDRESS ?? "Not configured"}
-                </p>
+                <p className="break-all"><span className="font-semibold not-italic text-ink">Treasury:</span> {TOPUP_TREASURY_ADDRESS ?? "Not configured"}</p>
                 {pendingTxHash ? (
-                  <p className="break-all">
-                    <span className="font-semibold">Pending tx:</span> {pendingTxHash}
-                  </p>
+                  <p className="break-all text-teal"><span className="font-semibold">Pending tx:</span> {pendingTxHash}</p>
                 ) : null}
               </div>
             </aside>
@@ -331,13 +324,13 @@ export function CreditsClient() {
               type="number"
               min={1}
               step="0.01"
-              className="rounded-xl border border-ink/20 px-3 py-2 text-sm"
+              className="rounded-xl border border-ink/20 bg-chalk px-3 py-2 text-sm focus:border-teal focus:outline-none"
               placeholder="Amount"
             />
             <select
               value={offchainCurrency}
               onChange={(event) => setOffchainCurrency(event.currentTarget.value.toUpperCase())}
-              className="rounded-xl border border-ink/20 px-3 py-2 text-sm"
+              className="rounded-xl border border-ink/20 bg-chalk px-3 py-2 text-sm focus:border-teal focus:outline-none"
             >
               {rail === "stablecoin" ? (
                 <>
@@ -353,71 +346,72 @@ export function CreditsClient() {
                 </>
               )}
             </select>
-            <div className="rounded-xl border border-ink/20 bg-ink/5 px-3 py-2 text-sm">
+            <div className="rounded-xl border border-ink/15 bg-ink/5 px-3 py-2 text-sm text-ink/60">
               Rail: {rail}
             </div>
             <Button type="button" disabled={submitting} onClick={createOffchainTopup}>
-              {submitting ? "Creating..." : "Create Top-Up Order"}
+              {submitting ? "Creating..." : "Create Order"}
             </Button>
           </div>
         )}
       </section>
 
-      <Separator />
-
-      <div>
-        <h2 className="text-xl font-bold">Pending Reconciliation</h2>
-        {pendingTopups.length === 0 ? (
-          <p className="muted mt-2 text-sm">No pending top-ups.</p>
-        ) : (
-          <div className="mt-3 space-y-2">
+      {/* Pending reconciliation */}
+      {pendingTopups.length > 0 && (
+        <section className="panel p-5">
+          <h2 className="mb-3 text-lg font-bold text-ink">Pending Reconciliation</h2>
+          <div className="space-y-2">
             {pendingTopups.map((topup) => (
-              <article key={topup.id} className="rounded-xl border border-ink/20 px-3 py-2 text-sm">
-                <p>
-                  <span className="font-semibold">Order #{topup.id}</span> | {topup.rail} | {topup.currency}{" "}
-                  {topup.amount}
-                </p>
-                <p className="font-[var(--font-mono)] text-xs">{topup.providerReference}</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-2"
-                  disabled={simulatingId === topup.id}
-                  onClick={() => {
-                    void simulateWebhook(topup.id);
-                  }}
-                >
-                  {simulatingId === topup.id ? "Reconciling..." : "Simulate Webhook Completion"}
-                </Button>
+              <article key={topup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/10 bg-chalk px-4 py-3 text-sm">
+                <div>
+                  <p className="font-semibold text-ink">Order #{topup.id}</p>
+                  <p className="font-mono text-xs text-ink/50">{topup.providerReference}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-ink/60">{topup.rail} · {topup.currency} {topup.amount}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={simulatingId === topup.id}
+                    onClick={() => { void simulateWebhook(topup.id); }}
+                  >
+                    {simulatingId === topup.id ? "Reconciling..." : "Simulate"}
+                  </Button>
+                </div>
               </article>
             ))}
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
-      <Separator />
-
-      <div>
-        <h2 className="text-xl font-bold">Credit Ledger</h2>
+      {/* Credit ledger */}
+      <section className="panel p-5">
+        <h2 className="mb-3 text-lg font-bold text-ink">Credit Ledger</h2>
         {state?.ledger.length ? (
-          <div className="mt-3 space-y-2">
+          <div className="space-y-2">
             {state.ledger.slice(0, 25).map((entry) => (
-              <article key={entry.id} className="rounded-xl border border-ink/20 px-3 py-2 text-sm">
-                <p>
-                  <span className="font-semibold">{entry.kind}</span> | {entry.amount > 0 ? "+" : ""}
-                  {formatCredits(entry.amount)}
-                </p>
-                <p className="muted text-xs">{new Date(entry.createdAt).toLocaleString()}</p>
-                {entry.note ? <p className="text-xs">{entry.note}</p> : null}
+              <article key={entry.id} className="flex items-center justify-between rounded-xl border border-ink/8 bg-chalk/60 px-4 py-3 text-sm">
+                <div>
+                  <span className="font-semibold capitalize text-ink">{entry.kind}</span>
+                  {entry.note ? <p className="muted text-xs">{entry.note}</p> : null}
+                  <p className="muted text-xs">{new Date(entry.createdAt).toLocaleString()}</p>
+                </div>
+                <span className={`font-mono text-sm font-bold ${entry.amount > 0 ? "text-teal" : "text-flare"}`}>
+                  {entry.amount > 0 ? "+" : ""}{formatCredits(entry.amount)}
+                </span>
               </article>
             ))}
           </div>
         ) : (
-          <p className="muted mt-2 text-sm">No ledger entries yet.</p>
+          <p className="muted text-sm">No ledger entries yet.</p>
         )}
-      </div>
+      </section>
 
-      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
+      {error ? (
+        <div className="rounded-xl border border-flare/20 bg-flare/5 px-4 py-3 text-sm font-semibold text-flare">
+          {error}
+        </div>
+      ) : null}
     </div>
   );
 }

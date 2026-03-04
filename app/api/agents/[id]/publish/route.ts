@@ -4,23 +4,6 @@ import { publishAgent } from "@/lib/publish-agent";
 
 export const dynamic = "force-dynamic";
 
-function toPublishErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Failed to publish agent";
-  const looksLikeRevert =
-    message.includes("execution reverted") ||
-    message.includes("CALL_EXCEPTION") ||
-    message.includes("estimateGas");
-
-  if (!looksLikeRevert) {
-    return message;
-  }
-
-  return (
-    "0G Storage transaction reverted for the server signer wallet. " +
-    "Fund the ZERO_G_PRIVATE_KEY address on 0G testnet and verify ZERO_G_EVM_RPC / ZERO_G_STORAGE_INDEXER_RPC."
-  );
-}
-
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -43,7 +26,7 @@ export async function POST(
     });
   } catch (error) {
     return NextResponse.json(
-      { error: toPublishErrorMessage(error) },
+      { error: error instanceof Error ? error.message : "Failed to publish agent" },
       { status: 500 },
     );
   }

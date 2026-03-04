@@ -1,21 +1,28 @@
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+
 import notFoundImage from "@/assets/error-404-not-found.png";
-import Image from 'next/image';
 
 export default function NotFound() {
   return (
-    <main className="mx-auto flex flex-col items-center justify-center">
+    <main className="mx-auto flex flex-col items-center justify-center py-20 text-center">
       <Image
         src={notFoundImage}
         alt="404 Not Found"
-        className="mx-auto mb-4 h-64 w-auto"
+        className="mx-auto mb-6 h-56 w-auto"
       />
-      <h1 className="mx-auto mb-2 w-auto text-5xl font-black sm:text-6xl">Not Found</h1>
-      <p className="muted mt-0 text-sm">Page not found. The URL may be incorrect, moved, or deleted. Please check and try again.</p>
-      <Button variant="outline" className="mt-5 border-blue-950 border-dashed" asChild>
-        <Link href="/">Back to Home</Link>
-      </Button>
+      <h1 className="mb-2 text-5xl font-bold text-ink sm:text-6xl">Not Found</h1>
+      <p className="mt-2 max-w-sm text-sm text-ink/60">
+        Page not found. The URL may be incorrect, moved, or deleted.
+      </p>
+      <Link
+        href="/"
+        className="mt-6 inline-flex rounded-xl border border-ink/20 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-ink/5"
+      >
+        Back to Home
+      </Link>
     </main>
   );
 }

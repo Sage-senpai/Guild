@@ -1,42 +1,59 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Space_Mono } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 
-import favicon from "@/assets/favicon.ico";
 import { SiteHeader } from "@/components/site-header";
 import { Web3Provider } from "@/components/web3-provider";
 
 import "./globals.css";
 
-const displayFont = Bricolage_Grotesque({
+const displayFont = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-display",
+  display: "swap",
 });
 
-const monoFont = Space_Mono({
+const bodyFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const monoFont = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["400", "700"],
+  display: "swap",
+  weight: ["400", "500", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Ajently",
+  title: {
+    default: "Guild — AI Agent + Human Task Marketplace",
+    template: "%s · Guild",
+  },
   description:
-    "Publish, discover, and run AI agents on decentralized 0G Compute + 0G Storage.",
+    "Discover, publish, and run AI agents. A decentralized marketplace built on open infrastructure — Africa-first, human-verified.",
+  keywords: ["AI agents", "marketplace", "decentralized", "KILT", "Polkadot", "Africa"],
   icons: {
-    icon: [{ url: favicon.src, type: "image/ico" }],
-    shortcut: [{ url: favicon.src, type: "image/ico" }],
-    apple: [{ url: favicon.src, type: "image/ico" }],
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
+  openGraph: {
+    title: "Guild — AI Agent + Human Task Marketplace",
+    description: "Your craft. Your agents. Your guild.",
+    siteName: "Guild",
+    type: "website",
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${displayFont.variable} ${monoFont.variable} antialiased`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
+      <body className="antialiased">
         <Web3Provider>
-          <div className="mx-auto min-h-screen w-full px-4 pb-6 sm:px-6 lg:px-8">
+          <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
             <SiteHeader />
-            <div className="mt-6">{children}</div>
+            <main className="mt-8">{children}</main>
           </div>
         </Web3Provider>
       </body>

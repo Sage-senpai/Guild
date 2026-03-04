@@ -4,7 +4,6 @@ import { ArrowRight02Icon } from '@hugeicons/core-free-icons';
 
 import { AgentCard } from "@/components/agent-card";
 import { listAgents } from "@/lib/agent-service";
-import { publishAgentsMissingStorageProof } from "@/lib/publish-agent";
 import { AGENT_CATEGORIES } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,98 +27,88 @@ export default async function HomePage({
   const search = params.search ?? "";
   const category = params.category ?? "";
 
-  if (process.env.ZERO_G_AUTO_SYNC_STORAGE_ON_HOME === "true") {
-    try {
-      await publishAgentsMissingStorageProof();
-    } catch (error) {
-      console.error(
-        "Failed to sync agents to 0G Storage:",
-        error instanceof Error ? error.message : error,
-      );
-    }
-  }
-
   const agents = await listAgents({ search, category, includeDrafts: false });
 
   return (
     <main>
-      <div className="space-y-8">
-        <div className="glass rounded-3xl px-6 py-8 shadow-panel sm:px-8">
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr] lg:items-end">
+      <div className="space-y-10">
+        {/* Hero */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink via-teal to-ink px-8 py-12 sm:px-12 sm:py-16">
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[2fr_1fr] lg:items-end">
             <div>
-              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-flare">
-                App Store For AI Agents
+              <p className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-mint/80">
+                The Agent Marketplace
               </p>
-              <h1 className="max-w-2xl text-3xl font-black leading-tight sm:text-4xl">
-                Do better work with AI agents.
+              <h1 className="font-display max-w-2xl text-4xl font-bold leading-tight text-stone sm:text-5xl lg:text-6xl">
+                Your craft.<br />Your agents.<br />
+                <span className="text-mint">Your guild.</span>
               </h1>
-              <p className="muted mt-3 max-w-2xl">
-                Ajently is a next-gen platform that enables users to solve real problems, automate tasks, and move faster.
+              <p className="mt-4 max-w-xl text-base text-stone/70">
+                Discover, publish, and run AI agents. Built on open infrastructure — decentralized by design, Africa-first in spirit.
               </p>
-              <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold">
-                {/* <span className="rounded-full bg-mint/20 px-3 py-1">Storage: {storageMode()}</span>
-                <span className="rounded-full bg-ember/25 px-3 py-1">Compute: {computeMode()}</span> */}
-              </div>
             </div>
             <div className="flex lg:justify-end">
               <Link
                 href="/create"
-                className="rounded-2xl bg-ink px-6 py-3 text-center text-sm font-bold text-white transition hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-2xl bg-mint px-6 py-3 text-sm font-bold text-ink transition hover:-translate-y-0.5 hover:bg-mint/90"
               >
-                Publish New Agent
+                Publish an Agent
+                <HugeiconsIcon icon={ArrowRight02Icon} size={16} />
               </Link>
             </div>
           </div>
-        </div>
+          {/* ambient glow */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(43,117,116,0.25),transparent_60%)]" />
+        </section>
 
-        <div className="px-4">
+        {/* Search & Filter */}
+        <div>
           <form className="grid gap-3 sm:grid-cols-[2fr_1fr_auto]">
             <input
               name="search"
               defaultValue={search}
               placeholder="Search agents..."
-              className="w-full rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare transition focus:ring-2"
+              className="w-full rounded-xl border border-stone/30 bg-white px-4 py-2.5 text-sm text-ink outline-none ring-mint transition placeholder:text-stone/50 focus:ring-2"
             />
-            <Select>
-              <SelectTrigger className="w-full rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare transition focus:ring-2">
-                <SelectValue placeholder="Select category" />
+            <Select name="category" defaultValue={category || ""}>
+              <SelectTrigger className="w-full rounded-xl border border-stone/30 bg-white px-4 py-2.5 text-sm">
+                <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  <SelectItem value="">All categories</SelectItem>
                   {AGENT_CATEGORIES.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
-
             <Button
               type="submit"
-              variant="default"
-              className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+              className="rounded-xl bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink/90"
             >
-              <HugeiconsIcon icon={ArrowRight02Icon} />
+              Search
             </Button>
           </form>
         </div>
 
-        <Separator />
+        <Separator className="border-stone/20" />
 
+        {/* Grid */}
         <div>
           {agents.length === 0 ? (
-            <div className="rounded-2xl border border-ink/15 p-10 text-center">
-              <p className="mb-3 text-lg font-bold">No agents found</p>
+            <div className="rounded-2xl border border-stone/20 bg-white/60 p-14 text-center">
+              <p className="mb-1 text-lg font-bold text-ink">No agents found</p>
+              <p className="mb-5 text-sm text-ink/50">Be the first to publish one.</p>
               <Link
                 href="/create"
-                className="rounded-full border border-ink/20 px-4 py-2 text-sm font-semibold hover:bg-ink/5"
+                className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold text-ink hover:bg-ink/5"
               >
-                Create the first one
+                Create Agent
               </Link>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {agents.map((agent) => (
                 <AgentCard key={agent.id} agent={agent} />
               ))}

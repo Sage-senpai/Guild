@@ -16,20 +16,7 @@ function sanitizeFilename(name: string): string {
 }
 
 function toPublishErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Failed to publish agent to real 0G Storage";
-  const looksLikeRevert =
-    message.includes("execution reverted") ||
-    message.includes("CALL_EXCEPTION") ||
-    message.includes("estimateGas");
-
-  if (!looksLikeRevert) {
-    return message;
-  }
-
-  return (
-    "0G Storage transaction reverted for the server signer wallet. " +
-    "Fund the ZERO_G_PRIVATE_KEY address on 0G testnet and verify ZERO_G_EVM_RPC / ZERO_G_STORAGE_INDEXER_RPC."
-  );
+  return error instanceof Error ? error.message : "Failed to publish agent to storage";
 }
 
 export async function GET(request: Request) {
