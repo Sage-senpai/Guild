@@ -25,7 +25,7 @@ export default async function HomePage({
 }) {
   const params = await searchParams;
   const search = params.search ?? "";
-  const category = params.category ?? "";
+  const category = params.category === "all" ? "" : (params.category ?? "");
 
   const agents = await listAgents({ search, category, includeDrafts: false });
 
@@ -70,13 +70,13 @@ export default async function HomePage({
               placeholder="Search agents..."
               className="w-full rounded-xl border border-stone/30 bg-white px-4 py-2.5 text-sm text-ink outline-none ring-mint transition placeholder:text-stone/50 focus:ring-2"
             />
-            <Select name="category" defaultValue={category || ""}>
+            <Select name="category" defaultValue={category || "all"}>
               <SelectTrigger className="w-full rounded-xl border border-stone/30 bg-white px-4 py-2.5 text-sm">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {AGENT_CATEGORIES.map((item) => (
                     <SelectItem key={item} value={item}>{item}</SelectItem>
                   ))}
