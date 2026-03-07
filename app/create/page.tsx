@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiFetch } from "@/lib/api-fetch";
 import { cardBackgroundImage } from "@/lib/agent-card-visual";
 import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODEL_BADGES, AGENT_MODELS } from "@/lib/types";
 
@@ -41,7 +42,7 @@ export default function CreateAgentPage() {
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
 
-    const response = await fetch("/api/agents", {
+    const response = await apiFetch("/api/agents", {
       method: "POST",
       body: formData,
     });

@@ -337,6 +337,31 @@ export async function getUserById(userId: number): Promise<UserRecord | null> {
   });
 }
 
+/** Find user by wallet or create with 100 starter credits. Returns user ID. */
+export async function getOrCreateUser(walletAddress: string): Promise<number> {
+  return withWrite((db) => {
+    const addr = walletAddress.toLowerCase();
+    const existing = queryOne<{ id: number }>(
+      db,
+      "SELECT id FROM users WHERE wallet_address = ?",
+      [addr],
+    );
+    if (existing) return existing.id;
+
+    db.run("INSERT INTO users (wallet_address, credits) VALUES (?, 100)", [addr]);
+    return getLastInsertId(db);
+  });
+}
+
+/** Resolve user from x-wallet-address header. Auto-creates on first visit. */
+export async function resolveUserId(request: Request): Promise<number> {
+  const wallet = request.headers.get("x-wallet-address");
+  if (wallet && /^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+    return getOrCreateUser(wallet);
+  }
+  return DEMO_USER_ID;
+}
+
 export async function listRunsForAgent(agentId: number): Promise<RunRecord[]> {
   return withRead((db) => {
     const rows = queryAll<RunRow>(

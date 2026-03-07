@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   createTopupOrder,
-  DEMO_USER_ID,
+  resolveUserId,
   getCreditStats,
   getUserById,
   listCreditLedgerForUser,
@@ -12,16 +12,17 @@ import { createTopupSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const user = await getUserById(DEMO_USER_ID);
+export async function GET(request: Request) {
+  const userId = await resolveUserId(request);
+  const user = await getUserById(userId);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   const [stats, ledger, topups] = await Promise.all([
-    getCreditStats(DEMO_USER_ID),
-    listCreditLedgerForUser(DEMO_USER_ID, 100),
-    listTopupOrdersForUser(DEMO_USER_ID, 100),
+    getCreditStats(userId),
+    listCreditLedgerForUser(userId, 100),
+    listTopupOrdersForUser(userId, 100),
   ]);
 
   return NextResponse.json({ user, stats, ledger, topups });
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   const order = await createTopupOrder({
-    userId: DEMO_USER_ID,
+    userId: await resolveUserId(request),
     rail: parsed.data.rail,
     currency: parsed.data.currency,
     amount: parsed.data.amount,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { verifyKiltCredential } from "@/lib/kilt/verify";
 import { upsertKiltCredential } from "@/lib/task-service";
 import { verifyKiltSchema } from "@/lib/validation";
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   await upsertKiltCredential({
-    userId: DEMO_USER_ID,
+    userId: await resolveUserId(request),
     credentialHash: result.credentialHash,
     attestationId,
     expiresAt: null,

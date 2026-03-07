@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { apiFetch } from "@/lib/api-fetch";
 import { TASK_CATEGORIES } from "@/lib/types";
 
 const DEADLINE_OPTIONS = [
@@ -51,7 +52,7 @@ export default function PostTaskPage() {
     }
 
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await apiFetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

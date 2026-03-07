@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { claimTask, getKiltCredential, isHumanVerified } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -16,8 +16,10 @@ export async function POST(
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
   }
 
+  const userId = await resolveUserId(request);
+
   // Proof of Personhood check
-  const credential = await getKiltCredential(DEMO_USER_ID);
+  const credential = await getKiltCredential(userId);
   if (!isHumanVerified(credential)) {
     return NextResponse.json(
       { error: "Proof of Personhood required. Verify via /api/kilt/verify first." },
@@ -26,7 +28,7 @@ export async function POST(
   }
 
   try {
-    const task = await claimTask(taskId, DEMO_USER_ID);
+    const task = await claimTask(taskId, userId);
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to claim task";

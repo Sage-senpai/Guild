@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { apiFetch } from "@/lib/api-fetch";
+
 type Props = {
   onVerified?: () => void;
 };
@@ -18,7 +20,7 @@ export function KiltVerifyButton({ onVerified }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/kilt/verify", {
+      const res = await apiFetch("/api/kilt/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credentialJson, attestationId }),

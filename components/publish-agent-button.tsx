@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiFetch } from "@/lib/api-fetch";
+
 type PublishResponse = {
   error?: string;
   storageMode?: "real";
@@ -29,7 +31,7 @@ export function PublishAgentButton({ agentId }: { agentId: number }) {
     setError("");
     setStatus("");
 
-    const response = await fetch(`/api/agents/${agentId}/publish`, {
+    const response = await apiFetch(`/api/agents/${agentId}/publish`, {
       method: "POST",
     });
     const payload = (await response.json()) as PublishResponse;

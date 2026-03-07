@@ -12,6 +12,7 @@ import {
 } from "wagmi";
 
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatCredits } from "@/lib/format";
 import type { CreditLedgerRecord, TopupOrderRecord } from "@/lib/types";
 
@@ -64,7 +65,7 @@ export function CreditsClient() {
 
   async function loadCredits() {
     setLoading(true);
-    const response = await fetch("/api/credits");
+    const response = await apiFetch("/api/credits");
     const payload = (await response.json()) as CreditsPayload;
     if (!response.ok) {
       setError(payload.error ?? "Failed to load credits");
@@ -92,7 +93,7 @@ export function CreditsClient() {
 
     setSubmitting(true);
     setError("");
-    const response = await fetch("/api/credits", {
+    const response = await apiFetch("/api/credits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -148,7 +149,7 @@ export function CreditsClient() {
 
       await publicClient.waitForTransactionReceipt({ hash });
 
-      const response = await fetch("/api/credits/onchain", {
+      const response = await apiFetch("/api/credits/onchain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -177,7 +178,7 @@ export function CreditsClient() {
   async function simulateWebhook(topupId: number) {
     setSimulatingId(topupId);
     setError("");
-    const response = await fetch(`/api/credits/${topupId}/simulate`, { method: "POST" });
+    const response = await apiFetch(`/api/credits/${topupId}/simulate`, { method: "POST" });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
       setError(payload.error ?? "Failed to reconcile top-up");

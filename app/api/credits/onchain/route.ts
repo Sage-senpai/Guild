@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, formatEther, http, isAddress, isAddressEqual, parseEther, type Hex } from "viem";
 
-import { completeOnchainTopup, DEMO_USER_ID } from "@/lib/agent-service";
+import { completeOnchainTopup, resolveUserId } from "@/lib/agent-service";
 import { createOnchainTopupSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     }
 
     const completed = await completeOnchainTopup({
-      userId: DEMO_USER_ID,
+      userId: await resolveUserId(request),
       txHash: parsed.data.txHash,
       fromAddress: tx.from,
       chainId: parsed.data.chainId,

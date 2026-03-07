@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { listApplications } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -17,7 +17,7 @@ export async function GET(
   }
 
   try {
-    const applications = await listApplications(taskId, DEMO_USER_ID);
+    const applications = await listApplications(taskId, await resolveUserId(request));
     return NextResponse.json({ applications });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to list applicants";

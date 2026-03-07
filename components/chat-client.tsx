@@ -26,6 +26,7 @@ import {
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { Button } from "@/components/ui/button";
 
+import { apiFetch } from "@/lib/api-fetch";
 import { formatCredits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { nanoid } from "nanoid";
@@ -186,7 +187,7 @@ export function ChatClient({
     setStatus("streaming");
 
     try {
-      const response = await fetch(`/api/agents/${agentId}/run`, {
+      const response = await apiFetch(`/api/agents/${agentId}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),

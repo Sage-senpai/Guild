@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { createTask, listTasks } from "@/lib/task-service";
 import { createTaskSchema, listTasksSchema } from "@/lib/validation";
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { task } = await createTask({ ...parsed.data, posterId: DEMO_USER_ID });
+    const { task } = await createTask({ ...parsed.data, posterId: await resolveUserId(request) });
     return NextResponse.json({ task }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create task";

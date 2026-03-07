@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { apiFetch } from "@/lib/api-fetch";
+
 type StorageProofResponse = {
   retrievedAt: string;
   manifest: {
@@ -27,7 +29,7 @@ export function VerifyStorageButton({ agentId }: { agentId: number }) {
     setLoading(true);
     setError("");
 
-    const response = await fetch(`/api/agents/${agentId}/storage`, { method: "GET" });
+    const response = await apiFetch(`/api/agents/${agentId}/storage`, { method: "GET" });
     const payload = (await response.json()) as StorageProofResponse;
 
     if (!response.ok) {

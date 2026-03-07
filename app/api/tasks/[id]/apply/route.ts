@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { applyForTask, getKiltCredential, isHumanVerified } from "@/lib/task-service";
 import { applyTaskSchema } from "@/lib/validation";
 
@@ -17,8 +17,10 @@ export async function POST(
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
   }
 
+  const userId = await resolveUserId(request);
+
   // Proof of Personhood check
-  const credential = await getKiltCredential(DEMO_USER_ID);
+  const credential = await getKiltCredential(userId);
   if (!isHumanVerified(credential)) {
     return NextResponse.json(
       { error: "Proof of Personhood required. Verify via /api/kilt/verify first." },
@@ -36,7 +38,7 @@ export async function POST(
   }
 
   try {
-    const application = await applyForTask(taskId, DEMO_USER_ID, parsed.data.message);
+    const application = await applyForTask(taskId, userId, parsed.data.message);
     return NextResponse.json({ application }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to apply for task";

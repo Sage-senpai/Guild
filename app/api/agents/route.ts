@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { NextResponse } from "next/server";
 
-import { createAgent, DEMO_USER_ID, listAgents, attachKnowledgeFile } from "@/lib/agent-service";
+import { createAgent, resolveUserId, listAgents, attachKnowledgeFile } from "@/lib/agent-service";
 import { resolveDataPath } from "@/lib/data-dir";
 import { publishAgent } from "@/lib/publish-agent";
 import { listAgentsSchema, createAgentSchema } from "@/lib/validation";
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     pricePerRun: payload.data.pricePerRun,
     cardImageDataUrl,
     cardGradient: payload.data.cardGradient,
-    creatorId: DEMO_USER_ID,
+    creatorId: await resolveUserId(request),
   });
 
   const uploadedFile = formData.get("knowledge_file");

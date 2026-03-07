@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { submitProof } from "@/lib/task-service";
 import { submitProofSchema } from "@/lib/validation";
 
@@ -31,7 +31,7 @@ export async function POST(
   }
 
   try {
-    const task = await submitProof(taskId, DEMO_USER_ID, parsed.data.proofUrl);
+    const task = await submitProof(taskId, await resolveUserId(request), parsed.data.proofUrl);
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to submit proof";

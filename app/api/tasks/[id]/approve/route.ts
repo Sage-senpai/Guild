@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { approveTask } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -17,7 +17,7 @@ export async function POST(
   }
 
   try {
-    const task = await approveTask(taskId, DEMO_USER_ID);
+    const task = await approveTask(taskId, await resolveUserId(request));
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to approve task";

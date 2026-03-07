@@ -16,3 +16,7 @@ yarn-error.log*
 pnpm-debug.log*
 package/
 *.tgz
+# Hardhat
+artifacts/
+cache/
+typechain-types/

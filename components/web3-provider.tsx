@@ -25,7 +25,7 @@ if (!process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim()) {
   console.warn("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is missing. Using fallback project id.");
 }
 
-const config = getDefaultConfig({
+export const wagmiConfig = getDefaultConfig({
   appName: "Guild",
   projectId,
   chains: [
@@ -44,7 +44,7 @@ const queryClient = new QueryClient();
 
 export function Web3Provider({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>{children}</RainbowKitProvider>
       </QueryClientProvider>

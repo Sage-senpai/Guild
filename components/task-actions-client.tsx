@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { apiFetch } from "@/lib/api-fetch";
 import { KiltVerifyButton } from "@/components/kilt-verify-button";
 import type { TaskRecord } from "@/lib/types";
 
@@ -17,7 +18,7 @@ function ClaimButton({ taskId }: { taskId: number }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}/claim`, { method: "POST" });
+      const res = await apiFetch(`/api/tasks/${taskId}/claim`, { method: "POST" });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
         setError(data.error ?? "Failed to claim task");
@@ -60,7 +61,7 @@ function ApplyForm({ taskId }: { taskId: number }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}/apply`, {
+      const res = await apiFetch(`/api/tasks/${taskId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message || undefined }),
@@ -128,7 +129,7 @@ export function SubmitProofForm({ taskId }: { taskId: number }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}/submit`, {
+      const res = await apiFetch(`/api/tasks/${taskId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proofUrl }),
@@ -193,7 +194,7 @@ export function ReviewActions({ taskId }: { taskId: number }) {
     setLoading(action);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
+      const res = await apiFetch(`/api/tasks/${taskId}/${action}`, { method: "POST" });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
         setError(data.error ?? "Action failed");
@@ -244,7 +245,7 @@ export function CancelButton({ taskId }: { taskId: number }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}/cancel`, { method: "POST" });
+      const res = await apiFetch(`/api/tasks/${taskId}/cancel`, { method: "POST" });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
         setError(data.error ?? "Failed to cancel");

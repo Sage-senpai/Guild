@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { getKiltCredential, isHumanVerified } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const credential = await getKiltCredential(DEMO_USER_ID);
+export async function GET(request: Request) {
+  const credential = await getKiltCredential(await resolveUserId(request));
   const verified = isHumanVerified(credential);
 
   return NextResponse.json({

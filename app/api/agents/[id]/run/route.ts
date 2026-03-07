@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
-  DEMO_USER_ID,
+  resolveUserId,
   getAgentById,
   readKnowledgeFromLocal,
   runAgentForUser,
@@ -67,7 +67,7 @@ export async function POST(
 
   try {
     const { run, user } = await runAgentForUser({
-      userId: DEMO_USER_ID,
+      userId: await resolveUserId(request),
       agentId,
       input: payload.data.message,
       output: inference.output,

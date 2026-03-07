@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_USER_ID } from "@/lib/agent-service";
+import { resolveUserId } from "@/lib/agent-service";
 import { selectApplicant } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; appId: string }> },
 ) {
   const { id, appId } = await params;
@@ -22,7 +22,7 @@ export async function POST(
   }
 
   try {
-    const task = await selectApplicant(taskId, applicationId, DEMO_USER_ID);
+    const task = await selectApplicant(taskId, applicationId, await resolveUserId(request));
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to select applicant";
