@@ -58,6 +58,7 @@ type UserRow = {
   id: number;
   wallet_address: string;
   credits: number;
+  integrity_score: number;
 };
 
 // ── Mappers ──────────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ function mapKilt(row: KiltCredentialRow): KiltCredentialRecord {
 }
 
 function mapUser(row: UserRow): UserRecord {
-  return { id: row.id, walletAddress: row.wallet_address, credits: Number(row.credits) };
+  return { id: row.id, walletAddress: row.wallet_address, credits: Number(row.credits), integrityScore: Number(row.integrity_score ?? 80) };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

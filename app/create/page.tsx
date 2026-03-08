@@ -3,25 +3,39 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { apiFetch } from "@/lib/api-fetch";
 import { cardBackgroundImage } from "@/lib/agent-card-visual";
 import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODEL_BADGES, AGENT_MODELS } from "@/lib/types";
 
+type CreatedAgent = {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  model: string;
+  pricePerRun: number;
+  cardGradient: (typeof AGENT_CARD_GRADIENTS)[number];
+  cardImageDataUrl: string | null;
+  published: boolean;
+  manifestUri: string | null;
+  storageHash: string | null;
+};
+
 type CreateResponse = {
-  agent?: { id: number };
+  agent?: CreatedAgent;
   published?: boolean;
-  storageMode?: "real";
+  storageMode?: string;
   agentId?: number;
   error?: string;
 };
 
 export default function CreateAgentPage() {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [createdAgent, setCreatedAgent] = useState<CreatedAgent | null>(null);
   const [cardGradient, setCardGradient] = useState<(typeof AGENT_CARD_GRADIENTS)[number]>("aurora");
   const [cardImagePreviewUrl, setCardImagePreviewUrl] = useState<string | null>(null);
 
@@ -56,12 +70,12 @@ export default function CreateAgentPage() {
     }
 
     const created = data.agent;
-    const published = data.published;
     if (created) {
+      setCreatedAgent(created);
       setStatus(
-        published
+        data.published
           ? "Agent created and published to decentralized storage."
-          : "Agent created as draft. Publish it from the agent details page.",
+          : "Agent created as draft.",
       );
       if (cardImagePreviewUrl) {
         URL.revokeObjectURL(cardImagePreviewUrl);
@@ -69,13 +83,90 @@ export default function CreateAgentPage() {
       setCardImagePreviewUrl(null);
       setCardGradient("aurora");
       formElement.reset();
-      router.push(`/agents/${created.id}`);
-      router.refresh();
     } else {
       setError("Invalid response from server");
     }
 
     setSubmitting(false);
+  }
+
+  if (createdAgent) {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6">
+        <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-mint">
+            Success
+          </p>
+          <h1 className="text-3xl font-black">Agent Created</h1>
+          <p className="muted mt-2">{status}</p>
+        </section>
+
+        <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
+          <div className="flex items-start gap-4">
+            <div
+              className="h-14 w-14 shrink-0 rounded-full border border-ink/15 bg-cover bg-center"
+              style={{
+                backgroundImage: cardBackgroundImage(
+                  createdAgent.cardImageDataUrl,
+                  createdAgent.cardGradient,
+                ),
+              }}
+            />
+            <div className="min-w-0">
+              <p className="mb-1 inline-block rounded-full bg-ink/5 px-2 py-0.5 text-xs font-semibold">
+                {createdAgent.category}
+              </p>
+              <h2 className="text-2xl font-bold">{createdAgent.name}</h2>
+              <p className="muted mt-1">{createdAgent.description}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-2 rounded-xl border border-ink/15 p-4 text-sm sm:grid-cols-2">
+            <p>
+              <span className="font-semibold">Model:</span> {createdAgent.model}
+            </p>
+            <p>
+              <span className="font-semibold">Price:</span> {createdAgent.pricePerRun} credits/run
+            </p>
+            <p>
+              <span className="font-semibold">Status:</span>{" "}
+              {createdAgent.published ? "Published" : "Draft"}
+            </p>
+            <p className="truncate">
+              <span className="font-semibold">Storage:</span>{" "}
+              {createdAgent.manifestUri ?? "Not published"}
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href={`/agents/${createdAgent.id}/chat`}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+            >
+              Open Chat
+            </Link>
+            <Link
+              href={`/agents/${createdAgent.id}`}
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              View Details
+            </Link>
+            <button
+              onClick={() => setCreatedAgent(null)}
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Create Another
+            </button>
+            <Link
+              href="/"
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Back to Marketplace
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (

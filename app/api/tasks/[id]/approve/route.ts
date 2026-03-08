@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { resolveUserId } from "@/lib/agent-service";
 import { approveTask } from "@/lib/task-service";
+import { recalculateIntegrity, computeAndAwardBadges } from "@/lib/reputation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,15 @@ export async function POST(
   }
 
   try {
-    const task = await approveTask(taskId, await resolveUserId(request));
+    const result = await approveTask(taskId, await resolveUserId(request));
+    const task = "task" in result ? result.task : result;
+
+    // Update integrity and badges for the worker
+    if (task.assigneeId) {
+      await recalculateIntegrity(task.assigneeId);
+      await computeAndAwardBadges(task.assigneeId);
+    }
+
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to approve task";

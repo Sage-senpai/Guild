@@ -84,6 +84,9 @@ export type AgentRecord = {
   knowledgeLocalPath: string | null;
   knowledgeFilename: string | null;
   published: boolean;
+  avgRating: number;
+  totalReviews: number;
+  listingStatus: AgentListingStatus;
   createdAt: string;
 };
 
@@ -102,6 +105,7 @@ export type UserRecord = {
   id: number;
   walletAddress: string;
   credits: number;
+  integrityScore: number;
 };
 
 export type CreditLedgerKind =
@@ -219,4 +223,80 @@ export type KiltCredentialRecord = {
   verifiedAt: string;
   expiresAt: string | null;
   createdAt: string;
+};
+
+// ── Reputation & Quality Control ────────────────────────────────────────────
+
+export const FREE_AGENT_SLOTS = 2;
+
+export type AgentListingStatus = "active" | "flagged" | "suspended";
+
+export type AgentReviewRecord = {
+  id: number;
+  agentId: number;
+  userId: number;
+  runId: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
+export const AGENT_BADGES = [
+  "rising_star",
+  "top_rated",
+  "verified_creator",
+  "power_creator",
+] as const;
+
+export type AgentBadge = (typeof AGENT_BADGES)[number];
+
+export const AGENT_BADGE_LABELS: Record<AgentBadge, string> = {
+  rising_star: "Rising Star",
+  top_rated: "Top Rated",
+  verified_creator: "Verified Creator",
+  power_creator: "Power Creator",
+};
+
+export const HUMAN_BADGES = [
+  "first_task",
+  "reliable",
+  "specialist",
+  "top_worker",
+  "verified_human",
+] as const;
+
+export type HumanBadge = (typeof HUMAN_BADGES)[number];
+
+export const HUMAN_BADGE_LABELS: Record<HumanBadge, string> = {
+  first_task: "First Task",
+  reliable: "Reliable",
+  specialist: "Specialist",
+  top_worker: "Top Worker",
+  verified_human: "Verified Human",
+};
+
+export type UserBadgeRecord = {
+  id: number;
+  userId: number;
+  badgeType: string;
+  badgeTier: "agent" | "human";
+  category: string | null;
+  earnedAt: string;
+};
+
+export type ListingFeeResult = {
+  fee: number;
+  tier: "free" | "basic" | "premium" | "enterprise";
+  reason: string;
+};
+
+export type UserReputationStats = {
+  integrityScore: number;
+  tasksCompleted: number;
+  tasksDisputed: number;
+  tasksPosted: number;
+  agentsPublished: number;
+  agentBadges: AgentBadge[];
+  humanBadges: Array<{ badge: HumanBadge; category: string | null }>;
+  categoryExpertise: Record<string, number>;
 };

@@ -311,6 +311,42 @@ async function initializeSchema(db: Database): Promise<void> {
     );
   `);
 
+  // ── Reputation & Quality Control ──────────────────────────────────
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS agent_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      run_id INTEGER NOT NULL UNIQUE,
+      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(agent_id) REFERENCES agents(id),
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(run_id) REFERENCES runs(id),
+      UNIQUE(user_id, run_id)
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_badges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      badge_type TEXT NOT NULL,
+      badge_tier TEXT NOT NULL CHECK (badge_tier IN ('agent', 'human')),
+      category TEXT,
+      earned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      UNIQUE(user_id, badge_type, category)
+    );
+  `);
+
+  ensureColumn(db, "agents", "avg_rating", "REAL NOT NULL DEFAULT 0");
+  ensureColumn(db, "agents", "total_reviews", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "agents", "listing_status", "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(db, "users", "integrity_score", "INTEGER NOT NULL DEFAULT 80");
+
   db.run(
     `
       INSERT OR IGNORE INTO users (id, wallet_address, credits)

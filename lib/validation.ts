@@ -97,3 +97,11 @@ export const verifyKiltSchema = z.object({
   credentialJson: z.string().min(10).max(50_000),
   attestationId: z.string().trim().min(1).max(200),
 });
+
+// ── Reviews ─────────────────────────────────────────────────────────────────
+
+export const submitReviewSchema = z.object({
+  runId: z.coerce.number().int().positive(),
+  rating: z.coerce.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).optional().transform((v) => v || null),
+});

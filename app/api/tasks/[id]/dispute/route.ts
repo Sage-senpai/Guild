@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { resolveUserId } from "@/lib/agent-service";
 import { disputeTask } from "@/lib/task-service";
+import { recalculateIntegrity } from "@/lib/reputation";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,12 @@ export async function POST(
 
   try {
     const task = await disputeTask(taskId, await resolveUserId(request));
+
+    // Recalculate worker integrity after dispute
+    if (task.assigneeId) {
+      await recalculateIntegrity(task.assigneeId);
+    }
+
     return NextResponse.json({ task });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to dispute task";

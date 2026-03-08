@@ -35,7 +35,28 @@ function statusBadge(status: string) {
   return styles[status] ?? "bg-ink/10 text-ink";
 }
 
-export function TaskCard({ task }: { task: TaskRecord }) {
+function integrityColor(score: number): string {
+  if (score >= 90) return "bg-emerald-500";
+  if (score >= 70) return "bg-mint";
+  if (score >= 50) return "bg-amber-500";
+  return "bg-flare";
+}
+
+function IntegrityMeter({ score }: { score: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="h-1.5 w-10 overflow-hidden rounded-full bg-ink/10">
+        <div
+          className={`h-full rounded-full transition-all ${integrityColor(score)}`}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      <span className="font-mono text-[10px] text-ink/50">{score}</span>
+    </div>
+  );
+}
+
+export function TaskCard({ task, posterIntegrity }: { task: TaskRecord; posterIntegrity?: number }) {
   const icon = CATEGORY_ICONS[task.category] ?? "📌";
   const remaining = timeRemaining(task.deadline);
   const isExpired = remaining === "Expired";
@@ -75,6 +96,11 @@ export function TaskCard({ task }: { task: TaskRecord }) {
           ⏰ {remaining}
         </span>
         <span className="font-bold text-teal">{task.reward.toFixed(2)} credits</span>
+        {posterIntegrity !== undefined && (
+          <span className="flex items-center gap-1 muted" title="Poster integrity score">
+            Poster <IntegrityMeter score={posterIntegrity} />
+          </span>
+        )}
         <span className="muted ml-auto">PoP required</span>
       </div>
 

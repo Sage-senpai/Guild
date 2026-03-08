@@ -8,9 +8,26 @@ import {
   listCreditLedgerForUser,
   listTopupOrdersForUser,
 } from "@/lib/agent-service";
+import { getUserReputation, computeAndAwardBadges } from "@/lib/reputation";
 import { formatCredits, formatDate, formatUsd } from "@/lib/format";
+import { AGENT_BADGE_LABELS, HUMAN_BADGE_LABELS, FREE_AGENT_SLOTS } from "@/lib/types";
+import type { AgentBadge, HumanBadge } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function integrityColor(score: number): string {
+  if (score >= 90) return "bg-emerald-500";
+  if (score >= 70) return "bg-mint";
+  if (score >= 50) return "bg-amber-500";
+  return "bg-flare";
+}
+
+function integrityLabel(score: number): string {
+  if (score >= 90) return "Excellent";
+  if (score >= 70) return "Good";
+  if (score >= 50) return "Fair";
+  return "Low";
+}
 
 export default async function ProfilePage() {
   const [user, agents, creditStats, ledger, topups] = await Promise.all([
@@ -31,6 +48,11 @@ export default async function ProfilePage() {
     );
   }
 
+  await computeAndAwardBadges(user.id);
+  const reputation = await getUserReputation(user.id);
+
+  const freeSlots = Math.max(0, FREE_AGENT_SLOTS - agents.length);
+
   return (
     <main className="space-y-6">
       {/* Identity card */}
@@ -46,11 +68,12 @@ export default async function ProfilePage() {
           <h1 className="font-display text-3xl font-bold text-white">Your Profile</h1>
           <p className="mt-2 font-mono text-xs text-white/50 break-all">{user.walletAddress}</p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-4">
             {[
               { label: "Available", value: formatCredits(user.credits) },
               { label: "Used", value: formatCredits(creditStats.used) },
               { label: "Topped Up", value: formatCredits(creditStats.toppedUp) },
+              { label: "Integrity", value: `${reputation.integrityScore}/100` },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -62,7 +85,7 @@ export default async function ProfilePage() {
             ))}
           </div>
 
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href="/credits"
               className="inline-flex rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-chalk"
@@ -71,6 +94,94 @@ export default async function ProfilePage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Integrity & Badges */}
+      <section className="panel p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-ink">Reputation</h2>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {/* Integrity meter */}
+          <div>
+            <p className="mb-2 text-sm font-semibold text-ink">Integrity Score</p>
+            <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-ink/10">
+              <div
+                className={`h-full rounded-full transition-all ${integrityColor(reputation.integrityScore)}`}
+                style={{ width: `${reputation.integrityScore}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-ink/70">
+                {reputation.integrityScore}/100 — {integrityLabel(reputation.integrityScore)}
+              </span>
+              <span className="text-[10px] text-ink/40">
+                {reputation.tasksCompleted} completed · {reputation.tasksDisputed} disputed
+              </span>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-ink/10 px-3 py-2">
+              <p className="text-xs text-ink/50">Tasks Completed</p>
+              <p className="text-lg font-bold text-ink">{reputation.tasksCompleted}</p>
+            </div>
+            <div className="rounded-xl border border-ink/10 px-3 py-2">
+              <p className="text-xs text-ink/50">Tasks Posted</p>
+              <p className="text-lg font-bold text-ink">{reputation.tasksPosted}</p>
+            </div>
+            <div className="rounded-xl border border-ink/10 px-3 py-2">
+              <p className="text-xs text-ink/50">Agents Published</p>
+              <p className="text-lg font-bold text-ink">{reputation.agentsPublished}</p>
+            </div>
+            <div className="rounded-xl border border-ink/10 px-3 py-2">
+              <p className="text-xs text-ink/50">Free Agent Slots</p>
+              <p className="text-lg font-bold text-ink">{freeSlots}/{FREE_AGENT_SLOTS}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Badges */}
+        {(reputation.agentBadges.length > 0 || reputation.humanBadges.length > 0) && (
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-semibold text-ink">Badges</p>
+            <div className="flex flex-wrap gap-2">
+              {reputation.agentBadges.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800"
+                >
+                  {AGENT_BADGE_LABELS[badge as AgentBadge] ?? badge}
+                </span>
+              ))}
+              {reputation.humanBadges.map((b) => (
+                <span
+                  key={`${b.badge}-${b.category}`}
+                  className="rounded-full border border-teal/30 bg-mint/10 px-3 py-1 text-xs font-bold text-teal"
+                >
+                  {HUMAN_BADGE_LABELS[b.badge as HumanBadge] ?? b.badge}
+                  {b.category ? ` (${b.category})` : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category expertise */}
+        {Object.keys(reputation.categoryExpertise).length > 0 && (
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-semibold text-ink">Category Expertise</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(reputation.categoryExpertise).map(([cat, count]) => (
+                <span
+                  key={cat}
+                  className="rounded-full border border-ink/15 bg-ink/5 px-3 py-1 text-xs font-semibold capitalize text-ink/70"
+                >
+                  {cat}: {count} tasks
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Recent credit activity */}
@@ -165,15 +276,33 @@ export default async function ProfilePage() {
                     {formatUsd(agent.pricePerRun)}/run
                   </span>
                 </div>
-                <p className="muted mb-3 text-xs leading-relaxed line-clamp-2">{agent.description}</p>
+                <p className="muted mb-2 text-xs leading-relaxed line-clamp-2">{agent.description}</p>
+                {/* Rating */}
+                {agent.totalReviews > 0 && (
+                  <p className="mb-2 text-xs text-ink/50">
+                    <span className="text-amber-500">★</span> {agent.avgRating.toFixed(1)} ({agent.totalReviews} reviews)
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
-                  <span
-                    className={`tag text-[10px] uppercase tracking-wide ${
-                      agent.published ? "bg-mint/20 text-teal" : "bg-ink/10 text-ink/60"
-                    }`}
-                  >
-                    {agent.published ? "Published" : "Draft"}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`tag text-[10px] uppercase tracking-wide ${
+                        agent.published ? "bg-mint/20 text-teal" : "bg-ink/10 text-ink/60"
+                      }`}
+                    >
+                      {agent.published ? "Published" : "Draft"}
+                    </span>
+                    {agent.listingStatus === "flagged" && (
+                      <span className="tag text-[10px] uppercase tracking-wide bg-flare/10 text-flare">
+                        Flagged
+                      </span>
+                    )}
+                    {agent.listingStatus === "suspended" && (
+                      <span className="tag text-[10px] uppercase tracking-wide bg-flare/20 text-flare">
+                        Suspended
+                      </span>
+                    )}
+                  </div>
                   <Link
                     href={`/agents/${agent.id}`}
                     className="rounded-lg border border-ink/20 px-3 py-1 text-xs font-semibold transition hover:bg-ink/5"

@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 import { TaskCard } from "@/components/task-card";
-import { listTasks } from "@/lib/task-service";
+import { listTasks, expireOverdueTasks } from "@/lib/task-service";
+import { getUserById } from "@/lib/agent-service";
 import { TASK_CATEGORIES } from "@/lib/types";
-import { expireOverdueTasks } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +28,16 @@ export default async function HumansPage({
     taskType: taskType || undefined,
     status: "open",
   });
+
+  // Batch-fetch poster integrity scores
+  const posterIds = [...new Set(tasks.map((t) => t.posterId))];
+  const posterMap = new Map<number, number>();
+  await Promise.all(
+    posterIds.map(async (pid) => {
+      const user = await getUserById(pid);
+      if (user) posterMap.set(pid, user.integrityScore);
+    }),
+  );
 
   return (
     <main className="space-y-8">
@@ -135,7 +145,7 @@ export default async function HumansPage({
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} posterIntegrity={posterMap.get(task.posterId)} />
             ))}
           </div>
         )}

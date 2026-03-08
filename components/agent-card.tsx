@@ -4,9 +4,56 @@ import { cardBackgroundImage } from "@/lib/agent-card-visual";
 import { formatUsd } from "@/lib/format";
 import type { AgentRecord } from "@/lib/types";
 
-export function AgentCard({ agent }: { agent: AgentRecord }) {
+function StarRating({ rating, count }: { rating: number; count: number }) {
+  if (count === 0) return null;
+  const full = Math.floor(rating);
+  const hasHalf = rating - full >= 0.25;
   return (
-    <article className="card-surface group flex flex-col p-5">
+    <div className="flex items-center gap-1">
+      <div className="flex gap-px text-xs" aria-label={`${rating.toFixed(1)} out of 5 stars`}>
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} className={i < full ? "text-amber-500" : i === full && hasHalf ? "text-amber-400" : "text-ink/15"}>
+            ★
+          </span>
+        ))}
+      </div>
+      <span className="font-mono text-[10px] text-ink/40">
+        {rating.toFixed(1)} ({count})
+      </span>
+    </div>
+  );
+}
+
+function AgentBadges({ agent }: { agent: AgentRecord }) {
+  const badges: Array<{ label: string; color: string }> = [];
+
+  if (agent.totalReviews >= 25 && agent.avgRating >= 4.5) {
+    badges.push({ label: "Top Rated", color: "bg-amber-100 text-amber-800 border-amber-300" });
+  } else if (agent.totalReviews >= 10 && agent.avgRating >= 4.0) {
+    badges.push({ label: "Rising Star", color: "bg-purple-50 text-purple-700 border-purple-200" });
+  }
+
+  if (agent.listingStatus === "flagged") {
+    badges.push({ label: "Under Review", color: "bg-flare/10 text-flare border-flare/20" });
+  }
+
+  if (badges.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {badges.map((b) => (
+        <span key={b.label} className={`rounded-full border px-1.5 py-px text-[9px] font-bold uppercase tracking-wide ${b.color}`}>
+          {b.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function AgentCard({ agent }: { agent: AgentRecord }) {
+  const isTopRated = agent.totalReviews >= 10 && agent.avgRating >= 4.5;
+
+  return (
+    <article className={`card-surface group flex flex-col p-5 ${isTopRated ? "ring-2 ring-amber-400/30" : ""}`}>
       {/* Header row */}
       <div className="mb-4 flex items-start gap-3">
         {/* Avatar */}
@@ -30,6 +77,12 @@ export function AgentCard({ agent }: { agent: AgentRecord }) {
           </div>
           <p className="font-mono text-xs text-ink/50">{formatUsd(agent.pricePerRun)} / run</p>
         </div>
+      </div>
+
+      {/* Badges & Rating */}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <AgentBadges agent={agent} />
+        <StarRating rating={agent.avgRating} count={agent.totalReviews} />
       </div>
 
       {/* Content */}

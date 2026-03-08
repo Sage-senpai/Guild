@@ -5,6 +5,7 @@ import { getLastInsertId, queryAll, queryOne, withRead, withWrite } from "@/lib/
 import { AGENT_MODELS } from "@/lib/types";
 import type {
   AgentCardGradient,
+  AgentListingStatus,
   AgentModel,
   AgentRecord,
   CreditLedgerKind,
@@ -37,6 +38,9 @@ type AgentRow = {
   knowledge_local_path: string | null;
   knowledge_filename: string | null;
   published: number;
+  avg_rating: number;
+  total_reviews: number;
+  listing_status: AgentListingStatus;
   created_at: string;
 };
 
@@ -55,6 +59,7 @@ type UserRow = {
   id: number;
   wallet_address: string;
   credits: number;
+  integrity_score: number;
 };
 
 type CreditLedgerRow = {
@@ -107,6 +112,9 @@ function mapAgent(row: AgentRow): AgentRecord {
       Boolean(row.storage_hash) &&
       Boolean(row.manifest_uri) &&
       Boolean(row.manifest_tx_hash),
+    avgRating: Number(row.avg_rating ?? 0),
+    totalReviews: Number(row.total_reviews ?? 0),
+    listingStatus: (row.listing_status as AgentListingStatus) ?? "active",
     createdAt: row.created_at,
   };
 }
@@ -129,6 +137,7 @@ function mapUser(row: UserRow): UserRecord {
     id: row.id,
     walletAddress: row.wallet_address,
     credits: Number(row.credits),
+    integrityScore: Number(row.integrity_score ?? 80),
   };
 }
 
@@ -168,6 +177,9 @@ export async function listAgents(options: {
   const where: string[] = [];
   const params: Array<number | string | Uint8Array | null> = [];
 
+  // Never show suspended agents in public listings
+  where.push("listing_status != 'suspended'");
+
   if (!options.includeDrafts) {
     where.push(
       "published = 1 AND storage_hash IS NOT NULL AND manifest_uri IS NOT NULL AND manifest_tx_hash IS NOT NULL",
@@ -193,7 +205,11 @@ export async function listAgents(options: {
         SELECT *
         FROM agents
         ${whereSql}
-        ORDER BY created_at DESC;
+        ORDER BY
+          CASE WHEN avg_rating >= 4.5 AND total_reviews >= 10 THEN 0 ELSE 1 END,
+          avg_rating DESC,
+          total_reviews DESC,
+          created_at DESC;
       `,
       params,
     );
@@ -234,8 +250,26 @@ export async function createAgent(input: {
   cardImageDataUrl: string | null;
   cardGradient: AgentCardGradient;
   creatorId?: number;
+  listingFee?: number;
 }): Promise<AgentRecord> {
   return withWrite((db) => {
+    const creatorId = input.creatorId ?? DEMO_USER_ID;
+    const fee = input.listingFee ?? 0;
+
+    // Deduct listing fee if applicable
+    if (fee > 0) {
+      const user = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [creatorId]);
+      if (!user || Number(user.credits) < fee) {
+        throw new Error("INSUFFICIENT_CREDITS");
+      }
+      db.run("UPDATE users SET credits = credits - ? WHERE id = ?", [fee, creatorId]);
+      db.run(
+        `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, note)
+         VALUES (?, 'run_debit', ?, 'agent_listing', ?)`,
+        [creatorId, -fee, `Agent listing fee`],
+      );
+    }
+
     db.run(
       `
         INSERT INTO agents (
@@ -259,7 +293,7 @@ export async function createAgent(input: {
         input.systemPrompt,
         input.cardImageDataUrl,
         input.cardGradient,
-        input.creatorId ?? DEMO_USER_ID,
+        creatorId,
         input.pricePerRun,
       ],
     );

@@ -3,9 +3,10 @@ import path from "node:path";
 
 import { NextResponse } from "next/server";
 
-import { createAgent, resolveUserId, listAgents, attachKnowledgeFile } from "@/lib/agent-service";
+import { createAgent, resolveUserId, getUserById, listAgents, attachKnowledgeFile } from "@/lib/agent-service";
 import { resolveDataPath } from "@/lib/data-dir";
 import { publishAgent } from "@/lib/publish-agent";
+import { calculateListingFee, getCreatorAgentCount } from "@/lib/reputation";
 import { listAgentsSchema, createAgentSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,30 @@ export async function POST(request: Request) {
     );
   }
 
+  // ── Listing fee enforcement ──────────────────────────────────────
+  const creatorId = await resolveUserId(request);
+  const agentCount = await getCreatorAgentCount(creatorId);
+  const listingFee = calculateListingFee({
+    creatorAgentCount: agentCount,
+    systemPromptLength: payload.data.systemPrompt.length,
+    pricePerRun: payload.data.pricePerRun,
+    model: payload.data.model,
+  });
+
+  if (listingFee.fee > 0) {
+    const user = await getUserById(creatorId);
+    if (!user || user.credits < listingFee.fee) {
+      return NextResponse.json(
+        {
+          error: `Listing fee required: ${listingFee.fee} credits (${listingFee.tier} tier). ${listingFee.reason}. You have ${agentCount} agents — first 2 are free.`,
+          listingFee,
+        },
+        { status: 402 },
+      );
+    }
+  }
+  // ──────────────────────────────────────────────────────────────
+
   const cardImageFile = formData.get("card_image");
   let cardImageDataUrl: string | null = null;
 
@@ -86,7 +111,8 @@ export async function POST(request: Request) {
     pricePerRun: payload.data.pricePerRun,
     cardImageDataUrl,
     cardGradient: payload.data.cardGradient,
-    creatorId: await resolveUserId(request),
+    creatorId,
+    listingFee: listingFee.fee,
   });
 
   const uploadedFile = formData.get("knowledge_file");
