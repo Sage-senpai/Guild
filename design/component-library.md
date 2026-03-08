@@ -1,4 +1,4 @@
-# Component Library Specification — Ajently
+# Component Library Specification — Guild
 
 > Document date: 2026-02-28
 > Framework: Next.js 16 + React 19 + TailwindCSS + Radix UI

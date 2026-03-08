@@ -382,7 +382,7 @@ OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_DEFAULT_MODEL=meta-llama/llama-3.3-70b-instruct:free
 
 # EigenLayer AVS (verifiable inference)
-EIGENAYER_AVS_ENDPOINT=https://avs.ajently.io
+EIGENAYER_AVS_ENDPOINT=https://avs.guild.io
 EIGENLAYER_OPERATOR_ADDRESS=0x...
 
 # Cost control

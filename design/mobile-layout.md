@@ -1,4 +1,4 @@
-# Mobile Layout Specification — Ajently
+# Mobile Layout Specification — Guild
 
 > Document date: 2026-02-28
 > Breakpoints: Mobile (360-767px), Tablet (768-1023px)

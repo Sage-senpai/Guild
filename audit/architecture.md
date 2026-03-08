@@ -1,4 +1,4 @@
-# Architecture Audit — Ajently MVP v1
+# Architecture Audit — Guild MVP v1
 
 > Audit date: 2026-02-28
 > Auditor role: Principal Web3 Systems Architect
@@ -8,7 +8,7 @@
 
 ## 1. System Overview
 
-Ajently is an **AI Agent Marketplace** — a platform where creators publish AI agents (with system prompts, optional knowledge files, and pricing) and users run them through a credit-based economy. The MVP is a hackathon submission demonstrating 0G Storage + Compute integration.
+Guild is an **AI Agent Marketplace** — a platform where creators publish AI agents (with system prompts, optional knowledge files, and pricing) and users run them through a credit-based economy. The MVP is a hackathon submission demonstrating 0G Storage + Compute integration.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

@@ -1,4 +1,4 @@
-# Design System — Ajently
+# Design System — Guild
 
 > Document date: 2026-02-28
 > Theme: Calm · Premium · Minimal · Decentralized-native

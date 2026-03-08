@@ -1,4 +1,4 @@
-# Infrastructure Plan — Guild / Ajently
+# Infrastructure Plan — Guild / Guild
 
 > Document date: 2026-03-01
 > Phases: MVP+ → Growth → Global Scale
@@ -98,7 +98,7 @@ JWT_EXPIRES_IN=24h
 SIWE_DOMAIN=guild.io  # or chosen domain
 
 # ── Database ─────────────────────────────────────────────────
-TURSO_DATABASE_URL=libsql://ajently-org.turso.io
+TURSO_DATABASE_URL=libsql://guild-org.turso.io
 TURSO_AUTH_TOKEN=<turso-auth-token>
 
 # ── Storage — Crust Network (Polkadot parachain) ─────────────
@@ -118,7 +118,7 @@ KILT_WSS_ADDRESS=wss://spiritnet.kilt.io
 CLOUDFLARE_R2_ACCOUNT_ID=<account-id>
 CLOUDFLARE_R2_ACCESS_KEY=<access-key>
 CLOUDFLARE_R2_SECRET_KEY=<secret-key>
-CLOUDFLARE_R2_BUCKET=ajently-assets
+CLOUDFLARE_R2_BUCKET=guild-assets
 
 # ── Compute ──────────────────────────────────────────────────
 OPENROUTER_API_KEY=<openrouter-key>
@@ -140,7 +140,7 @@ RPC_ARBITRUM=https://arb1.arbitrum.io/rpc
 
 # ── Monitoring ───────────────────────────────────────────────
 AXIOM_TOKEN=<axiom-token>
-AXIOM_DATASET=ajently-prod
+AXIOM_DATASET=guild-prod
 SENTRY_DSN=<sentry-dsn>
 
 # ── Security ─────────────────────────────────────────────────
@@ -203,10 +203,10 @@ export async function withRead<T>(fn: (db: LibSQLClient) => Promise<T>): Promise
 ### Step 3: Data Migration (Day 5)
 ```bash
 # Export existing SQLite data
-sqlite3 data/Ajently.sqlite .dump > migration.sql
+sqlite3 data/Guild.sqlite .dump > migration.sql
 
 # Apply to Turso
-turso db shell ajently < migration.sql
+turso db shell guild < migration.sql
 ```
 
 ---
@@ -309,16 +309,16 @@ jobs:
 ### Runbook — Database Failure
 ```bash
 # 1. Verify failure
-turso db shell ajently "SELECT 1;"
+turso db shell guild "SELECT 1;"
 
 # 2. Check Turso status page
 # status.turso.tech
 
 # 3. Rollback to last known good
-turso db restore ajently --timestamp "2026-02-28T10:00:00Z"
+turso db restore guild --timestamp "2026-02-28T10:00:00Z"
 
 # 4. Verify data integrity
-turso db shell ajently "SELECT COUNT(*) FROM agents WHERE published = 1;"
+turso db shell guild "SELECT COUNT(*) FROM agents WHERE published = 1;"
 
 # 5. Re-enable traffic (remove maintenance mode flag)
 ```

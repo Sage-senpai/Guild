@@ -1,4 +1,4 @@
-# Security Audit — Ajently MVP v1
+# Security Audit — Guild MVP v1
 
 > Audit date: 2026-02-28
 > Standard: OWASP Top 10 (2021) · Web3 Security · Smart Contract Considerations
@@ -235,7 +235,7 @@ Demo agents have fake, non-verifiable storage proofs. If the storage verificatio
 
 ## 4. Smart Contract Security Review
 
-**Finding**: Ajently has **no custom smart contracts**. All on-chain interactions use:
+**Finding**: Guild has **no custom smart contracts**. All on-chain interactions use:
 1. **0G Storage SDK**: `@0gfoundation/0g-ts-sdk` — interacts with 0G's own storage contracts
 2. **0G Compute Broker**: `@0glabs/0g-serving-broker` — interacts with 0G serving contracts
 3. **Viem public client**: Read-only tx verification for credit top-ups

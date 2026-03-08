@@ -1,4 +1,4 @@
-# Technical Debt Register — Ajently MVP v1
+# Technical Debt Register — Guild MVP v1
 
 > Audit date: 2026-02-28
 > Priority: P0 (production blocker) → P3 (nice to have)
@@ -17,7 +17,7 @@
 ### TD-P0-02: sql.js Cannot Scale Horizontally
 **Files**: `lib/db.ts`
 **Debt**: In-memory WASM SQLite. Cannot run multiple server instances.
-**Impact**: All data lost on deploy if `data/Ajently.sqlite` is not mounted. Cannot load-balance.
+**Impact**: All data lost on deploy if `data/Guild.sqlite` is not mounted. Cannot load-balance.
 **Effort**: Medium (1 week) — `withRead`/`withWrite` abstraction makes DB swap clean
 **Solution**: Migrate to Turso libSQL (drop-in) or Postgres (Neon/Supabase)
 

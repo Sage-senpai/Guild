@@ -2,7 +2,7 @@
 
 > Document date: 2026-02-28
 > Context: Decentralized AI agent marketplace, Africa-first, global ambition
-> Current working name: "Ajently" (MVP) | Candidate: "Guild"
+> Current working name: "Guild" (MVP) | Candidate: "Guild"
 
 ---
 

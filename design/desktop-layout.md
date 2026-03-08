@@ -1,4 +1,4 @@
-# Desktop Layout Specification — Ajently
+# Desktop Layout Specification — Guild
 
 > Document date: 2026-02-28
 > Breakpoints: Desktop (1024-1439px), Wide (1440px+)
