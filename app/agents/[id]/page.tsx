@@ -1,32 +1,101 @@
+"use client";
+
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { cardBackgroundImage } from "@/lib/agent-card-visual";
 import { PublishAgentButton } from "@/components/publish-agent-button";
 import { Separator } from "@/components/ui/separator";
 import { VerifyStorageButton } from "@/components/verify-storage-button";
-import { getAgentById, listRunsForAgent } from "@/lib/agent-service";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatDate, formatUsd } from "@/lib/format";
+import type { AgentRecord, RunRecord } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export default function AgentDetailPage() {
+  const params = useParams<{ id: string }>();
+  const agentId = Number(params?.id);
 
-export default async function AgentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const agentId = Number(id);
-  if (!Number.isInteger(agentId) || agentId <= 0) {
-    notFound();
+  const [agent, setAgent] = useState<AgentRecord | null>(null);
+  const [runs, setRuns] = useState<RunRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await apiFetch(`/api/agents/${agentId}`);
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setError("Agent not found. It may still be loading — try refreshing.");
+          setLoading(false);
+          return;
+        }
+
+        const data = (await res.json()) as { agent?: AgentRecord; runs?: RunRecord[] };
+        if (cancelled) return;
+
+        setAgent(data.agent ?? null);
+        setRuns(data.runs ?? []);
+        setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load agent. Please try again.");
+          setLoading(false);
+        }
+      }
+    }
+
+    if (Number.isInteger(agentId) && agentId > 0) {
+      load();
+    } else {
+      setError("Invalid agent ID.");
+      setLoading(false);
+    }
+
+    return () => { cancelled = true; };
+  }, [agentId]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
+          <p className="muted text-sm font-semibold">Loading agent…</p>
+        </div>
+      </main>
+    );
   }
 
-  const agent = await getAgentById(agentId);
-  if (!agent) {
-    notFound();
+  if (error || !agent) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="mx-auto max-w-md text-center">
+          <p className="mb-4 text-lg font-bold">Could not load agent</p>
+          <p className="muted mb-6 text-sm">{error}</p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+            >
+              Retry
+            </button>
+            <Link
+              href="/"
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Back to Marketplace
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
-
-  const runs = await listRunsForAgent(agent.id);
 
   return (
     <main>

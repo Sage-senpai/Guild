@@ -1,9 +1,10 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
 dotenv.config();
 
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY ?? "";
+const MOONSCAN_KEY = process.env.MOONSCAN_API_KEY ?? "";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -12,6 +13,7 @@ const config: HardhatUserConfig = {
   },
   paths: {
     sources: "./contracts",
+    tests: "./test",
   },
   networks: {
     moonbaseAlpha: {
@@ -24,6 +26,16 @@ const config: HardhatUserConfig = {
       chainId: 1284,
       accounts: DEPLOYER_KEY ? [DEPLOYER_KEY] : [],
     },
+  },
+  etherscan: {
+    apiKey: {
+      moonbaseAlpha: MOONSCAN_KEY,
+      moonbeam: MOONSCAN_KEY,
+    },
+  },
+  typechain: {
+    outDir: "typechain-types",
+    target: "ethers-v6",
   },
 };
 

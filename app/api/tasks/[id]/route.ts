@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { getTaskById } from "@/lib/task-service";
+import { resolveUserId } from "@/lib/agent-service";
+import { getKiltCredential, getTaskById, isHumanVerified } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -20,5 +21,13 @@ export async function GET(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ task });
+  const userId = await resolveUserId(request);
+  const credential = await getKiltCredential(userId);
+  const verified = isHumanVerified(credential);
+
+  return NextResponse.json({
+    task,
+    userId,
+    verified,
+  });
 }

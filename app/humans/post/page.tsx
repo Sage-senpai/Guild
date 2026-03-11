@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 import { apiFetch } from "@/lib/api-fetch";
@@ -17,9 +17,15 @@ const DEADLINE_OPTIONS = [
 
 const PLATFORM_FEE_RATE = 0.05;
 
-export default function PostTaskPage() {
-  const router = useRouter();
+type CreatedTask = {
+  id: number;
+  title: string;
+  category: string;
+  taskType: string;
+  reward: number;
+};
 
+export default function PostTaskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(TASK_CATEGORIES[0]);
@@ -30,6 +36,7 @@ export default function PostTaskPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdTask, setCreatedTask] = useState<CreatedTask | null>(null);
 
   const fee = Math.round(reward * PLATFORM_FEE_RATE * 100) / 100;
   const total = Math.round((reward + fee) * 100) / 100;
@@ -57,17 +64,71 @@ export default function PostTaskPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { task?: { id: number }; error?: string };
+      const data = (await res.json()) as { task?: CreatedTask; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Failed to post task");
         return;
       }
-      router.push(`/humans/${data.task?.id}`);
+      if (data.task) {
+        setCreatedTask(data.task);
+      }
     } catch {
       setError("Network error — please try again");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (createdTask) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-6">
+        <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-mint">
+            Success
+          </p>
+          <h1 className="text-3xl font-black">Task Posted</h1>
+          <p className="muted mt-2">Your task is live and waiting for workers.</p>
+        </section>
+
+        <section className="glass rounded-3xl p-6 shadow-panel sm:p-8">
+          <h2 className="text-2xl font-bold">{createdTask.title}</h2>
+          <div className="mt-3 grid gap-2 rounded-xl border border-ink/15 p-4 text-sm sm:grid-cols-2">
+            <p>
+              <span className="font-semibold">Category:</span>{" "}
+              {createdTask.category.charAt(0).toUpperCase() + createdTask.category.slice(1)}
+            </p>
+            <p>
+              <span className="font-semibold">Type:</span>{" "}
+              {createdTask.taskType === "instant" ? "Instant claim" : "Apply mode"}
+            </p>
+            <p>
+              <span className="font-semibold">Reward:</span> {createdTask.reward.toFixed(2)} credits
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href={`/humans/${createdTask.id}`}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+            >
+              View Task
+            </Link>
+            <button
+              onClick={() => setCreatedTask(null)}
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Post Another
+            </button>
+            <Link
+              href="/humans"
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Back to Tasks
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (

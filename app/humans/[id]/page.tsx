@@ -1,12 +1,14 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-
-import { CancelButton, ReviewActions, TaskActionsClient } from "@/components/task-actions-client";
-import { DEMO_USER_ID } from "@/lib/agent-service";
-import { getKiltCredential, getTaskById, isHumanVerified } from "@/lib/task-service";
-import type { TaskRecord } from "@/lib/types";
+"use client";
 
 export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+
+import { CancelButton, ReviewActions, TaskActionsClient } from "@/components/task-actions-client";
+import { apiFetch } from "@/lib/api-fetch";
+import type { TaskRecord } from "@/lib/types";
 
 const CATEGORY_ICONS: Record<string, string> = {
   testnet: "🔗",
@@ -47,30 +49,85 @@ function StatusBadge({ status }: { status: TaskRecord["status"] }) {
   );
 }
 
-export default async function TaskDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const taskId = Number(id);
+type TaskPageData = {
+  task: TaskRecord;
+  userId: number;
+  verified: boolean;
+};
 
-  if (!Number.isInteger(taskId) || taskId <= 0) {
-    notFound();
+export default function TaskDetailPage() {
+  const params = useParams<{ id: string }>();
+  const taskId = Number(params?.id);
+
+  const [data, setData] = useState<TaskPageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/tasks/${taskId}`);
+      if (!res.ok) {
+        setError("Task not found. It may still be loading — try refreshing.");
+        setLoading(false);
+        return;
+      }
+      const json = (await res.json()) as TaskPageData;
+      setData(json);
+      setLoading(false);
+    } catch {
+      setError("Failed to load task. Please try again.");
+      setLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (Number.isInteger(taskId) && taskId > 0) {
+      load();
+    } else {
+      setError("Invalid task ID.");
+      setLoading(false);
+    }
+  }, [taskId, load]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
+          <p className="muted text-sm font-semibold">Loading task…</p>
+        </div>
+      </main>
+    );
   }
 
-  const [task, credential] = await Promise.all([
-    getTaskById(taskId),
-    getKiltCredential(DEMO_USER_ID),
-  ]);
-
-  if (!task) {
-    notFound();
+  if (error || !data) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="mx-auto max-w-md text-center">
+          <p className="mb-4 text-lg font-bold">Could not load task</p>
+          <p className="muted mb-6 text-sm">{error}</p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => { setLoading(true); setError(null); load(); }}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+            >
+              Retry
+            </button>
+            <Link
+              href="/humans"
+              className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+            >
+              Back to Tasks
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
-  const verified = isHumanVerified(credential);
-  const isWorker = task.assigneeId === DEMO_USER_ID;
-  const isPoster = task.posterId === DEMO_USER_ID;
+  const { task, userId, verified } = data;
+  const isWorker = task.assigneeId === userId;
+  const isPoster = task.posterId === userId;
   const icon = CATEGORY_ICONS[task.category] ?? "📌";
   const remaining = timeRemaining(task.deadline);
 
