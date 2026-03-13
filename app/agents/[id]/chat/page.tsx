@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ChatClient } from "@/components/chat-client";
+import { WalletGate } from "@/components/wallet-gate";
 import { apiFetch } from "@/lib/api-fetch";
 
 export default function AgentChatPage() {
@@ -98,10 +99,12 @@ export default function AgentChatPage() {
   }
 
   return (
-    <main>
-      <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-        <ChatClient agentId={agentId} agentName={agentName} initialCredits={credits} />
-      </div>
-    </main>
+    <WalletGate
+      minCredits={0.01}
+      connectMessage="Connect your wallet to chat with AI agents."
+      creditsMessage="You need credits to run this agent. Top up your balance first."
+    >
+      <ChatClient agentId={agentId} agentName={agentName} initialCredits={credits} />
+    </WalletGate>
   );
 }

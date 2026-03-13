@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { apiFetch } from "@/lib/api-fetch";
 import { cardBackgroundImage } from "@/lib/agent-card-visual";
+import { WalletGate } from "@/components/wallet-gate";
 import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODEL_BADGES, AGENT_MODELS } from "@/lib/types";
 
 type CreatedAgent = {
@@ -32,6 +33,14 @@ type CreateResponse = {
 };
 
 export default function CreateAgentPage() {
+  return (
+    <WalletGate connectMessage="Connect your wallet to create and publish AI agents.">
+      <CreateAgentForm />
+    </WalletGate>
+  );
+}
+
+function CreateAgentForm() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");

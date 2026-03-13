@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useAccount } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+
 import { apiFetch } from "@/lib/api-fetch";
 import { KiltVerifyButton } from "@/components/kilt-verify-button";
 import type { TaskRecord } from "@/lib/types";
@@ -287,12 +290,32 @@ export function TaskActionsClient({
   isWorker: boolean;
 }) {
   const router = useRouter();
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
 
   if (task.status === "assigned" && isWorker) {
     return <SubmitProofForm taskId={task.id} />;
   }
 
   if (task.status !== "open") return null;
+
+  if (!isConnected) {
+    return (
+      <div className="glass rounded-2xl p-5 text-center">
+        <h3 className="mb-1 font-bold">Wallet Required</h3>
+        <p className="muted mb-4 text-sm">
+          Connect your wallet to claim or apply for tasks.
+        </p>
+        <button
+          type="button"
+          onClick={() => openConnectModal?.()}
+          className="rounded-full bg-ink px-6 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    );
+  }
 
   if (!verified) {
     return (

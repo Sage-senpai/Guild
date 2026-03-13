@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { apiFetch } from "@/lib/api-fetch";
+import { WalletGate } from "@/components/wallet-gate";
 import { TASK_CATEGORIES } from "@/lib/types";
 
 const DEADLINE_OPTIONS = [
@@ -26,6 +27,18 @@ type CreatedTask = {
 };
 
 export default function PostTaskPage() {
+  return (
+    <WalletGate
+      minCredits={0.5}
+      connectMessage="Connect your wallet to post tasks and reward workers."
+      creditsMessage="You need credits to post a task. Top up your balance first."
+    >
+      <PostTaskForm />
+    </WalletGate>
+  );
+}
+
+function PostTaskForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(TASK_CATEGORIES[0]);

@@ -221,24 +221,59 @@ export function ChatClient({
     await runAgent(message.text);
   }, [runAgent]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="grid h-[calc(100vh-8rem)] min-h-[70vh] w-full gap-0 lg:grid-cols-[260px_1fr]">
-      <aside className="flex flex-col border border-ink/15 p-4 lg:border-r-0">
-        <div className="space-y-2">
+    <div className="flex h-[calc(100dvh-5rem)] flex-col overflow-hidden rounded-2xl border border-ink/15 lg:flex-row">
+      {/* ── Mobile top bar ─────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 border-b border-ink/10 px-4 py-2.5 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ink/15 text-sm hover:bg-ink/5"
+          aria-label="Toggle sidebar"
+        >
+          ☰
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">{agentName}</p>
+          <p className="font-[var(--font-mono)] text-[10px] uppercase text-ink/50">
+            {formatCredits(credits)} credits
+          </p>
+        </div>
+        {lastComputeMeta ? (
+          <p className="hidden font-[var(--font-mono)] text-[10px] uppercase text-ink/40 sm:block">
+            {lastComputeMeta.model.split("/").pop()}
+          </p>
+        ) : null}
+      </div>
+
+      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      <aside
+        className={cn(
+          "flex w-full flex-col border-b border-ink/10 bg-chalk/80 p-4 lg:w-[260px] lg:shrink-0 lg:border-b-0 lg:border-r lg:border-ink/10",
+          sidebarOpen ? "max-h-64 overflow-auto" : "hidden lg:flex",
+        )}
+      >
+        <div className="hidden space-y-1 lg:block">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-flare">Agent Chat</p>
-          <h1 className="text-xl font-black">{agentName}</h1>
+          <h1 className="truncate text-lg font-black">{agentName}</h1>
           <p className="font-[var(--font-mono)] text-xs uppercase">
             Credits: {formatCredits(credits)}
           </p>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <Button type="button" className="flex-1" onClick={createNewChat}>
+        <div className="flex gap-2 lg:mt-4">
+          <Button
+            type="button"
+            className="flex-1"
+            onClick={() => { createNewChat(); setSidebarOpen(false); }}
+          >
             New chat
           </Button>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
+        <div className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-auto pr-1 lg:mt-4">
           {sessions.map((session) => (
             <button
               key={session.id}
@@ -246,6 +281,7 @@ export function ChatClient({
               onClick={() => {
                 setActiveSessionId(session.id);
                 setError("");
+                setSidebarOpen(false);
               }}
               className={cn(
                 "w-full rounded-xl border px-3 py-2 text-left text-sm transition",
@@ -255,35 +291,38 @@ export function ChatClient({
               )}
             >
               <p className="truncate font-semibold">{session.title}</p>
-              <p className={cn("mt-1 text-xs", activeSession?.id === session.id ? "text-white/80" : "text-ink/60")}>
+              <p className={cn("mt-0.5 text-xs", activeSession?.id === session.id ? "text-white/80" : "text-ink/60")}>
                 {new Date(session.updatedAt).toLocaleString()}
               </p>
             </button>
           ))}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 hidden lg:block">
           <Link
             href={`/agents/${agentId}`}
             className="inline-flex rounded-full border border-ink/20 px-3 py-1 text-xs font-semibold hover:bg-ink/5"
           >
-            Back to agent details
+            ← Agent details
           </Link>
         </div>
       </aside>
 
-      <div className="flex min-h-0 flex-col border border-ink/15">
-        <div className="border-b border-ink/10 px-4 py-3">
-          <p className="text-sm font-semibold">{activeSession?.title ?? "New chat"}</p>
+      {/* ── Chat area ──────────────────────────────────────────────────── */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* Desktop header */}
+        <div className="hidden border-b border-ink/10 px-4 py-2.5 lg:block">
+          <p className="truncate text-sm font-semibold">{activeSession?.title ?? "New chat"}</p>
           {lastComputeMeta ? (
-            <p className="muted mt-1 font-[var(--font-mono)] text-xs uppercase">
+            <p className="muted mt-0.5 font-[var(--font-mono)] text-xs uppercase">
               {lastComputeMeta.mode} | {lastComputeMeta.model}
             </p>
           ) : null}
         </div>
 
+        {/* Messages */}
         <Conversation className="min-h-0 flex-1">
-          <ConversationContent className="p-4">
+          <ConversationContent className="px-3 py-4 sm:px-6">
             {activeSession?.messages.length ? (
               activeSession.messages.map((message) => (
                 <Message from={message.role} key={message.id}>
@@ -302,12 +341,15 @@ export function ChatClient({
           <ConversationScrollButton />
         </Conversation>
 
+        {/* Input area */}
         <div className="border-t border-ink/10 p-3">
-          <Suggestions className="mb-2">
-            {SUGGESTIONS.map((suggestion) => (
-              <Suggestion key={suggestion} suggestion={suggestion} onClick={runAgent} />
-            ))}
-          </Suggestions>
+          <div className="mb-2 overflow-x-auto">
+            <Suggestions>
+              {SUGGESTIONS.map((suggestion) => (
+                <Suggestion key={suggestion} suggestion={suggestion} onClick={runAgent} />
+              ))}
+            </Suggestions>
+          </div>
 
           <PromptInput onSubmit={handlePromptSubmit}>
             <PromptInputBody>
