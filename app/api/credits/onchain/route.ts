@@ -11,10 +11,9 @@ const CHAIN_RPC_BY_ID: Record<number, string> = {
   10: "https://mainnet.optimism.io",
   137: "https://polygon-rpc.com",
   8453: "https://mainnet.base.org",
-  16601: "https://evmrpc-testnet.0g.ai",
-  16602: "https://evmrpc-testnet.0g.ai",
-  16661: "https://evmrpc.0g.ai",
   42161: "https://arb1.arbitrum.io/rpc",
+  1284: "https://rpc.api.moonbeam.network",
+  1287: "https://rpc.api.moonbase.moonbeam.network",
 };
 
 function getTreasuryAddress() {

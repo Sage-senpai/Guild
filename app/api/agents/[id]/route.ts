@@ -15,11 +15,18 @@ export async function GET(
     return NextResponse.json({ error: "Invalid agent id" }, { status: 400 });
   }
 
-  const agent = await getAgentById(agentId);
-  if (!agent) {
-    return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-  }
+  try {
+    const agent = await getAgentById(agentId);
+    if (!agent) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
 
-  const runs = await listRunsForAgent(agentId);
-  return NextResponse.json({ agent, runs });
+    const runs = await listRunsForAgent(agentId);
+    return NextResponse.json({ agent, runs });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load agent" },
+      { status: 500 },
+    );
+  }
 }

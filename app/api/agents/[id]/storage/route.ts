@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 function cidFromUri(uri: string): string {
   if (uri.startsWith("ipfs://")) return uri.slice("ipfs://".length);
-  if (uri.startsWith("0g://")) return uri.slice("0g://".length);
   return uri;
 }
 

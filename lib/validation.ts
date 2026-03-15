@@ -72,7 +72,7 @@ export const submitProofSchema = z.object({
             "testnet.arbiscan.io",
             "imgur.com", "i.imgur.com",
             "drive.google.com", "lh3.googleusercontent.com",
-            "0g.ai", "chainscan-galileo.0g.ai",
+            "moonscan.io", "moonbeam.moonscan.io", "moonbase.moonscan.io",
           ];
           return allowedHosts.some(
             (h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)

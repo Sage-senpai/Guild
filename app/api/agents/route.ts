@@ -102,29 +102,41 @@ export async function POST(request: Request) {
     cardImageDataUrl = `data:${mimeType};base64,${bytes.toString("base64")}`;
   }
 
-  const agent = await createAgent({
-    name: payload.data.name,
-    description: payload.data.description,
-    category: payload.data.category,
-    model: payload.data.model,
-    systemPrompt: payload.data.systemPrompt,
-    pricePerRun: payload.data.pricePerRun,
-    cardImageDataUrl,
-    cardGradient: payload.data.cardGradient,
-    creatorId,
-    listingFee: listingFee.fee,
-  });
+  let agent;
+  try {
+    agent = await createAgent({
+      name: payload.data.name,
+      description: payload.data.description,
+      category: payload.data.category,
+      model: payload.data.model,
+      systemPrompt: payload.data.systemPrompt,
+      pricePerRun: payload.data.pricePerRun,
+      cardImageDataUrl,
+      cardGradient: payload.data.cardGradient,
+      creatorId,
+      listingFee: listingFee.fee,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to create agent" },
+      { status: 500 },
+    );
+  }
 
-  const uploadedFile = formData.get("knowledge_file");
-  if (uploadedFile instanceof File && uploadedFile.size > 0) {
-    const knowledgeDir = resolveDataPath("knowledge");
-    await fs.mkdir(knowledgeDir, { recursive: true });
+  try {
+    const uploadedFile = formData.get("knowledge_file");
+    if (uploadedFile instanceof File && uploadedFile.size > 0) {
+      const knowledgeDir = resolveDataPath("knowledge");
+      await fs.mkdir(knowledgeDir, { recursive: true });
 
-    const filename = sanitizeFilename(uploadedFile.name || "knowledge.txt");
-    const localPath = path.join(knowledgeDir, `${agent.id}-${Date.now()}-${filename}`);
-    const bytes = Buffer.from(await uploadedFile.arrayBuffer());
-    await fs.writeFile(localPath, bytes);
-    await attachKnowledgeFile(agent.id, localPath, uploadedFile.name);
+      const filename = sanitizeFilename(uploadedFile.name || "knowledge.txt");
+      const localPath = path.join(knowledgeDir, `${agent.id}-${Date.now()}-${filename}`);
+      const bytes = Buffer.from(await uploadedFile.arrayBuffer());
+      await fs.writeFile(localPath, bytes);
+      await attachKnowledgeFile(agent.id, localPath, uploadedFile.name);
+    }
+  } catch {
+    // Knowledge attachment is non-fatal — agent was created successfully
   }
 
   if (!payload.data.publishNow) {

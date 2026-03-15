@@ -405,12 +405,13 @@ export async function approveTask(
       [task.assignee_id, reward, taskId, `Task #${taskId} completed`],
     );
 
-    // Record platform fee (already collected from poster at creation)
+    // Platform fee was already deducted at task creation (task_reserve).
+    // Record a zero-amount ledger entry for audit trail only.
     const fee = Number(task.platform_fee);
     db.run(
       `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
-       VALUES (?, 'task_fee', ?, 'task', ?, ?)`,
-      [task.poster_id, -fee, taskId, `Platform fee for task #${taskId}`],
+       VALUES (?, 'task_fee', 0, 'task', ?, ?)`,
+      [task.poster_id, taskId, `Platform fee ${fee.toFixed(2)} (collected at creation) for task #${taskId}`],
     );
 
     db.run(

@@ -63,7 +63,6 @@ function uriFromCid(cid: string): string {
 function cidFromUri(uri: string): string {
   const trimmed = uri.trim();
   if (trimmed.startsWith("ipfs://")) return trimmed.slice("ipfs://".length);
-  if (trimmed.startsWith("0g://")) return trimmed.slice("0g://".length);
   return trimmed;
 }
 
