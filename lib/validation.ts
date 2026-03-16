@@ -15,6 +15,15 @@ export const createAgentSchema = z.object({
 
 export const runAgentSchema = z.object({
   message: z.string().trim().min(1).max(4000),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(8000),
+      }),
+    )
+    .max(20)
+    .optional(),
 });
 
 export const listAgentsSchema = z.object({

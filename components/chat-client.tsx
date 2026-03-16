@@ -186,11 +186,16 @@ export function ChatClient({
     setInput("");
     setStatus("streaming");
 
+    // Send conversation history (last 20 messages) for multi-turn context
+    const history = (activeSession?.messages ?? [])
+      .slice(-20)
+      .map((m) => ({ role: m.role, content: m.content }));
+
     try {
       const response = await apiFetch(`/api/agents/${agentId}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       });
 
       const payload = (await response.json()) as RunResult;

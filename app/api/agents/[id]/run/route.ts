@@ -57,6 +57,7 @@ export async function POST(
       knowledge,
       userInput: payload.data.message,
       model: agent.model,
+      history: payload.data.history,
     });
   } catch (error) {
     return NextResponse.json(

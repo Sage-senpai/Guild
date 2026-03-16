@@ -71,6 +71,7 @@ async function runOpenRouterInference(params: {
   knowledge: string;
   userInput: string;
   model?: string;
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<ComputeResult> {
   const apiKey = process.env.OPENROUTER_API_KEY!.trim();
   const selectedModel = resolveOpenRouterModel(params.model);
@@ -80,6 +81,19 @@ async function runOpenRouterInference(params: {
   ]
     .filter(Boolean)
     .join("\n\n");
+
+  const messages: Array<{ role: string; content: string }> = [
+    { role: "system", content: systemContent },
+  ];
+
+  // Include conversation history for multi-turn context
+  if (params.history?.length) {
+    for (const msg of params.history) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
+  }
+
+  messages.push({ role: "user", content: params.userInput });
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -91,10 +105,7 @@ async function runOpenRouterInference(params: {
     },
     body: JSON.stringify({
       model: selectedModel,
-      messages: [
-        { role: "system", content: systemContent },
-        { role: "user", content: params.userInput },
-      ],
+      messages,
       temperature: 0.7,
     }),
   });
@@ -142,6 +153,7 @@ export async function runInference(params: {
   knowledge: string;
   userInput: string;
   model?: string;
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<ComputeResult> {
   if (openRouterEnabled()) {
     return runOpenRouterInference(params);
