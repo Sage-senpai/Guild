@@ -225,6 +225,7 @@ export async function listAgentsByCreator(creatorId: number): Promise<AgentRecor
         SELECT *
         FROM agents
         WHERE creator_id = ?
+          AND COALESCE(is_seed, 0) = 0
         ORDER BY created_at DESC;
       `,
       [creatorId],

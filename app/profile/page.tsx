@@ -1,19 +1,50 @@
-import Link from "next/link";
-
-import {
-  DEMO_USER_ID,
-  getCreditStats,
-  getUserById,
-  listAgentsByCreator,
-  listCreditLedgerForUser,
-  listTopupOrdersForUser,
-} from "@/lib/agent-service";
-import { getUserReputation, computeAndAwardBadges } from "@/lib/reputation";
-import { formatCredits, formatDate, formatUsd } from "@/lib/format";
-import { AGENT_BADGE_LABELS, HUMAN_BADGE_LABELS, FREE_AGENT_SLOTS } from "@/lib/types";
-import type { AgentBadge, HumanBadge } from "@/lib/types";
+"use client";
 
 export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { WalletGate } from "@/components/wallet-gate";
+import { apiFetch } from "@/lib/api-fetch";
+import { formatCredits, formatDate, formatUsd } from "@/lib/format";
+import { AGENT_BADGE_LABELS, HUMAN_BADGE_LABELS, FREE_AGENT_SLOTS } from "@/lib/types";
+import type { AgentBadge, AgentRecord, HumanBadge } from "@/lib/types";
+
+type ProfileData = {
+  user: {
+    id: number;
+    walletAddress: string;
+    credits: number;
+    integrityScore: number;
+  };
+  agents: AgentRecord[];
+  stats: { used: number; toppedUp: number };
+  ledger: Array<{
+    id: number;
+    kind: string;
+    amount: number;
+    createdAt: string;
+  }>;
+  topups: Array<{
+    id: number;
+    rail: string;
+    currency: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+  }>;
+  reputation: {
+    integrityScore: number;
+    tasksCompleted: number;
+    tasksDisputed: number;
+    tasksPosted: number;
+    agentsPublished: number;
+    agentBadges: string[];
+    humanBadges: Array<{ badge: string; category: string | null }>;
+    categoryExpertise: Record<string, number>;
+  };
+};
 
 function integrityColor(score: number): string {
   if (score >= 90) return "bg-emerald-500";
@@ -29,28 +60,74 @@ function integrityLabel(score: number): string {
   return "Low";
 }
 
-export default async function ProfilePage() {
-  const [user, agents, creditStats, ledger, topups] = await Promise.all([
-    getUserById(DEMO_USER_ID),
-    listAgentsByCreator(DEMO_USER_ID),
-    getCreditStats(DEMO_USER_ID),
-    listCreditLedgerForUser(DEMO_USER_ID, 15),
-    listTopupOrdersForUser(DEMO_USER_ID, 15),
-  ]);
+export default function ProfilePage() {
+  return (
+    <WalletGate connectMessage="Connect your wallet to view your profile, credits, and agents.">
+      <ProfileContent />
+    </WalletGate>
+  );
+}
 
-  if (!user) {
+function ProfileContent() {
+  const [data, setData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await apiFetch("/api/profile");
+        if (!res.ok) {
+          setError("Failed to load profile.");
+          setLoading(false);
+          return;
+        }
+        const json = (await res.json()) as ProfileData;
+        if (!cancelled) {
+          setData(json);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Network error loading profile.");
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
     return (
-      <main>
-        <div className="panel p-10 text-center">
-          <p className="text-ink/60">User profile not found.</p>
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
+          <p className="muted text-sm font-semibold">Loading profile…</p>
         </div>
       </main>
     );
   }
 
-  await computeAndAwardBadges(user.id);
-  const reputation = await getUserReputation(user.id);
+  if (error || !data) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <p className="mb-4 text-lg font-bold">Could not load profile</p>
+          <p className="muted mb-4 text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white transition hover:bg-ink/90"
+          >
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
 
+  const { user, agents, stats, ledger, topups, reputation } = data;
   const freeSlots = Math.max(0, FREE_AGENT_SLOTS - agents.length);
 
   return (
@@ -71,8 +148,8 @@ export default async function ProfilePage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-4">
             {[
               { label: "Available", value: formatCredits(user.credits) },
-              { label: "Used", value: formatCredits(creditStats.used) },
-              { label: "Topped Up", value: formatCredits(creditStats.toppedUp) },
+              { label: "Used", value: formatCredits(stats.used) },
+              { label: "Topped Up", value: formatCredits(stats.toppedUp) },
               { label: "Integrity", value: `${reputation.integrityScore}/100` },
             ].map(({ label, value }) => (
               <div
@@ -100,7 +177,6 @@ export default async function ProfilePage() {
       <section className="panel p-6 sm:p-8">
         <h2 className="mb-4 text-lg font-bold text-ink">Reputation</h2>
         <div className="grid gap-5 sm:grid-cols-2">
-          {/* Integrity meter */}
           <div>
             <p className="mb-2 text-sm font-semibold text-ink">Integrity Score</p>
             <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-ink/10">
@@ -119,7 +195,6 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-ink/10 px-3 py-2">
               <p className="text-xs text-ink/50">Tasks Completed</p>
@@ -140,7 +215,6 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Badges */}
         {(reputation.agentBadges.length > 0 || reputation.humanBadges.length > 0) && (
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold text-ink">Badges</p>
@@ -166,7 +240,6 @@ export default async function ProfilePage() {
           </div>
         )}
 
-        {/* Category expertise */}
         {Object.keys(reputation.categoryExpertise).length > 0 && (
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold text-ink">Category Expertise</p>
@@ -277,7 +350,6 @@ export default async function ProfilePage() {
                   </span>
                 </div>
                 <p className="muted mb-2 text-xs leading-relaxed line-clamp-2">{agent.description}</p>
-                {/* Rating */}
                 {agent.totalReviews > 0 && (
                   <p className="mb-2 text-xs text-ink/50">
                     <span className="text-amber-500">★</span> {agent.avgRating.toFixed(1)} ({agent.totalReviews} reviews)

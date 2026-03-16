@@ -345,6 +345,7 @@ async function initializeSchema(db: Database): Promise<void> {
   ensureColumn(db, "agents", "avg_rating", "REAL NOT NULL DEFAULT 0");
   ensureColumn(db, "agents", "total_reviews", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "agents", "listing_status", "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(db, "agents", "is_seed", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "users", "integrity_score", "INTEGER NOT NULL DEFAULT 80");
 
   db.run(
@@ -373,9 +374,10 @@ function seedDemoAgents(db: Database): void {
         creator_id,
         price_per_run,
         published,
-        card_gradient
+        card_gradient,
+        is_seed
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, ?);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, ?, 1);
     `,
   );
 
@@ -385,11 +387,12 @@ function seedDemoAgents(db: Database): void {
         agent.name,
       ]);
       if (existing) {
-        // Keep seeded demo agents visible in marketplace even if storage publish is not configured yet.
+        // Keep seeded demo agents visible in marketplace and mark as seed
         db.run(
           `
             UPDATE agents
             SET published = 1,
+                is_seed = 1,
                 storage_hash = COALESCE(storage_hash, ?),
                 manifest_uri = COALESCE(manifest_uri, ?),
                 manifest_tx_hash = COALESCE(manifest_tx_hash, ?)
