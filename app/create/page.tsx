@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { apiFetch } from "@/lib/api-fetch";
 import { cardBackgroundImage } from "@/lib/agent-card-visual";
+import { useToast } from "@/components/toast-provider";
 import { WalletGate } from "@/components/wallet-gate";
 import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODEL_BADGES, AGENT_MODELS } from "@/lib/types";
 
@@ -41,6 +42,7 @@ export default function CreateAgentPage() {
 }
 
 function CreateAgentForm() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -74,6 +76,7 @@ function CreateAgentForm() {
 
     if (!response.ok) {
       setError(data.error ?? "Failed to create agent");
+      toastError(data.error ?? "Failed to create agent");
       setSubmitting(false);
       return;
     }
@@ -81,11 +84,11 @@ function CreateAgentForm() {
     const created = data.agent;
     if (created) {
       setCreatedAgent(created);
-      setStatus(
-        data.published
-          ? "Agent created and published to decentralized storage."
-          : "Agent created as draft.",
-      );
+      const msg = data.published
+        ? "Agent created and published to decentralized storage."
+        : "Agent created as draft.";
+      setStatus(msg);
+      toastSuccess(`🎉 ${created.name} — ${msg}`);
       if (cardImagePreviewUrl) {
         URL.revokeObjectURL(cardImagePreviewUrl);
       }

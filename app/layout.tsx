@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 
 import { SiteHeader } from "@/components/site-header";
+import { ToastProvider } from "@/components/toast-provider";
 import { Web3Provider } from "@/components/web3-provider";
 
 import "./globals.css";
@@ -51,10 +52,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
       <body className="antialiased">
         <Web3Provider>
-          <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-            <SiteHeader />
-            <main className="mt-8">{children}</main>
-          </div>
+          <ToastProvider>
+            <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+              <SiteHeader />
+              <main className="mt-8">{children}</main>
+            </div>
+          </ToastProvider>
         </Web3Provider>
       </body>
     </html>

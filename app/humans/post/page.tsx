@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { apiFetch } from "@/lib/api-fetch";
+import { useToast } from "@/components/toast-provider";
 import { WalletGate } from "@/components/wallet-gate";
 import { TASK_CATEGORIES } from "@/lib/types";
 
@@ -39,6 +40,7 @@ export default function PostTaskPage() {
 }
 
 function PostTaskForm() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(TASK_CATEGORIES[0]);
@@ -79,11 +81,14 @@ function PostTaskForm() {
       });
       const data = (await res.json()) as { task?: CreatedTask; error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Failed to post task");
+        const msg = data.error ?? "Failed to post task";
+        setError(msg);
+        toastError(msg);
         return;
       }
       if (data.task) {
         setCreatedTask(data.task);
+        toastSuccess(`Task "${data.task.title}" posted — ${data.task.reward.toFixed(2)} credits escrowed`);
       }
     } catch {
       setError("Network error — please try again");

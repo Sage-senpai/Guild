@@ -12,6 +12,7 @@ import {
 } from "wagmi";
 
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/toast-provider";
 import { apiFetch } from "@/lib/api-fetch";
 import { formatCredits } from "@/lib/format";
 import type { CreditLedgerRecord, TopupOrderRecord } from "@/lib/types";
@@ -35,6 +36,7 @@ const TOPUP_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TOPUP_TREASURY_ADDRESS?.t
   | undefined;
 
 export function CreditsClient() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fundingOnchain, setFundingOnchain] = useState(false);
@@ -168,6 +170,7 @@ export function CreditsClient() {
 
       await Promise.all([loadCredits(), refetchNativeBalance()]);
       setPendingTxHash(null);
+      toastSuccess(`Credits topped up! ${amount} ${nativeSymbol} received.`);
     } catch (onchainError) {
       setError(onchainError instanceof Error ? onchainError.message : "Failed to process onchain top-up");
     } finally {

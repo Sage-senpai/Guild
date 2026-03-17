@@ -24,6 +24,7 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
+import { useToast } from "@/components/toast-provider";
 import { Button } from "@/components/ui/button";
 
 import { apiFetch } from "@/lib/api-fetch";
@@ -94,6 +95,7 @@ export function ChatClient({
   agentName: string;
   initialCredits: number;
 }) {
+  const { error: toastError } = useToast();
   const [sessions, setSessions] = useState<ChatSession[]>(() => [createSession()]);
   const [activeSessionId, setActiveSessionId] = useState<string>("");
   const [input, setInput] = useState("");
@@ -200,7 +202,9 @@ export function ChatClient({
 
       const payload = (await response.json()) as RunResult;
       if (!response.ok) {
-        setError(payload.error ?? "Failed to run agent");
+        const msg = payload.error ?? "Failed to run agent";
+        setError(msg);
+        toastError(msg === "Insufficient credits" ? "Not enough credits — top up to continue." : msg);
         setStatus("error");
         return;
       }
@@ -215,6 +219,7 @@ export function ChatClient({
       setStatus("ready");
     } catch {
       setError("Failed to run agent");
+      toastError("Failed to run agent — check your connection.");
       setStatus("error");
     }
   }, [activeSessionId, agentId, appendMessageToActiveSession, status]);

@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 
 import { apiFetch } from "@/lib/api-fetch";
+import { useToast } from "@/components/toast-provider";
 import { KiltVerifyButton } from "@/components/kilt-verify-button";
 import type { TaskRecord } from "@/lib/types";
 
@@ -14,6 +15,7 @@ import type { TaskRecord } from "@/lib/types";
 
 function ClaimButton({ taskId }: { taskId: number }) {
   const router = useRouter();
+  const { success: toastSuccess, error: toastErr } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,9 +26,12 @@ function ClaimButton({ taskId }: { taskId: number }) {
       const res = await apiFetch(`/api/tasks/${taskId}/claim`, { method: "POST" });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Failed to claim task");
+        const msg = data.error ?? "Failed to claim task";
+        setError(msg);
+        toastErr(msg);
         return;
       }
+      toastSuccess("Task claimed! Submit your proof when done.");
       router.refresh();
     } catch {
       setError("Network error");
@@ -55,6 +60,7 @@ function ClaimButton({ taskId }: { taskId: number }) {
 
 function ApplyForm({ taskId }: { taskId: number }) {
   const router = useRouter();
+  const { success: toastSuccess } = useToast();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +81,7 @@ function ApplyForm({ taskId }: { taskId: number }) {
         return;
       }
       setDone(true);
+      toastSuccess("Application submitted! The poster will review it.");
       router.refresh();
     } catch {
       setError("Network error");
@@ -123,6 +130,7 @@ function ApplyForm({ taskId }: { taskId: number }) {
 
 export function SubmitProofForm({ taskId }: { taskId: number }) {
   const router = useRouter();
+  const { success: toastSuccess } = useToast();
   const [proofUrl, setProofUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +151,7 @@ export function SubmitProofForm({ taskId }: { taskId: number }) {
         return;
       }
       setDone(true);
+      toastSuccess("Proof submitted! Waiting for poster approval.");
       router.refresh();
     } catch {
       setError("Network error");
@@ -190,6 +199,7 @@ export function SubmitProofForm({ taskId }: { taskId: number }) {
 
 export function ReviewActions({ taskId }: { taskId: number }) {
   const router = useRouter();
+  const { success: toastSuccess, info: toastInfo } = useToast();
   const [loading, setLoading] = useState<"approve" | "dispute" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -202,6 +212,11 @@ export function ReviewActions({ taskId }: { taskId: number }) {
       if (!res.ok) {
         setError(data.error ?? "Action failed");
         return;
+      }
+      if (action === "approve") {
+        toastSuccess("Task approved — credits paid to worker!");
+      } else {
+        toastInfo("Task disputed. Review will be escalated.");
       }
       router.refresh();
     } catch {
@@ -241,6 +256,7 @@ export function ReviewActions({ taskId }: { taskId: number }) {
 
 export function CancelButton({ taskId }: { taskId: number }) {
   const router = useRouter();
+  const { success: toastSuccess } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -254,6 +270,7 @@ export function CancelButton({ taskId }: { taskId: number }) {
         setError(data.error ?? "Failed to cancel");
         return;
       }
+      toastSuccess("Task cancelled — credits refunded to your balance.");
       router.push("/humans");
     } catch {
       setError("Network error");

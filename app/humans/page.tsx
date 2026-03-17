@@ -26,7 +26,7 @@ export default async function HumansPage({
   const tasks = await listTasks({
     category: category || undefined,
     taskType: taskType || undefined,
-    status: "open",
+    status: "all",
   });
 
   // Batch-fetch poster integrity scores
