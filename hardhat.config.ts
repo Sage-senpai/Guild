@@ -9,7 +9,7 @@ const MOONSCAN_KEY = process.env.MOONSCAN_API_KEY ?? "";
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.28",
-    settings: { optimizer: { enabled: true, runs: 200 } },
+    settings: { evmVersion: "cancun", optimizer: { enabled: true, runs: 200 } },
   },
   paths: {
     sources: "./contracts",
