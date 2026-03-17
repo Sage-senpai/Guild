@@ -41,9 +41,32 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
+      polkadotHubTestnet: "no-api-key-needed",
+      polkadotHub: "no-api-key-needed",
       moonbaseAlpha: MOONSCAN_KEY,
       moonbeam: MOONSCAN_KEY,
     },
+    customChains: [
+      {
+        network: "polkadotHubTestnet",
+        chainId: 420420417,
+        urls: {
+          apiURL: "https://blockscout-testnet.polkadot.io/api",
+          browserURL: "https://blockscout-testnet.polkadot.io",
+        },
+      },
+      {
+        network: "polkadotHub",
+        chainId: 420420419,
+        urls: {
+          apiURL: "https://blockscout.polkadot.io/api",
+          browserURL: "https://blockscout.polkadot.io",
+        },
+      },
+    ],
+  },
+  sourcify: {
+    enabled: false,
   },
   typechain: {
     outDir: "typechain-types",
