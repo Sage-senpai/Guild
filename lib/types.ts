@@ -225,6 +225,17 @@ export type KiltCredentialRecord = {
   createdAt: string;
 };
 
+export type TaskReviewRecord = {
+  id: number;
+  taskId: number;
+  reviewerId: number;
+  revieweeId: number;
+  role: "poster" | "worker";
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
 // ── Reputation & Quality Control ────────────────────────────────────────────
 
 export const FREE_AGENT_SLOTS = 2;

@@ -5,6 +5,7 @@ import type {
   TaskApplicationRecord,
   TaskCategory,
   TaskRecord,
+  TaskReviewRecord,
   TaskStatus,
   TaskType,
   UserRecord,
@@ -41,6 +42,17 @@ type TaskApplicationRow = {
   applicant_id: number;
   message: string | null;
   status: string;
+  created_at: string;
+};
+
+type TaskReviewRow = {
+  id: number;
+  task_id: number;
+  reviewer_id: number;
+  reviewee_id: number;
+  role: string;
+  rating: number;
+  comment: string | null;
   created_at: string;
 };
 
@@ -94,6 +106,19 @@ function mapApplication(row: TaskApplicationRow): TaskApplicationRecord {
     applicantId: row.applicant_id,
     message: row.message,
     status: row.status as "pending" | "selected" | "rejected",
+    createdAt: row.created_at,
+  };
+}
+
+function mapReview(row: TaskReviewRow): TaskReviewRecord {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    reviewerId: row.reviewer_id,
+    revieweeId: row.reviewee_id,
+    role: row.role as "poster" | "worker",
+    rating: row.rating,
+    comment: row.comment,
     createdAt: row.created_at,
   };
 }
@@ -531,13 +556,155 @@ export function isHumanVerified(credential: KiltCredentialRecord | null): boolea
 
 export async function expireOverdueTasks(): Promise<number> {
   return withWrite((db) => {
-    const result = db.run(
+    db.run(
       `UPDATE tasks
        SET status = 'expired'
        WHERE status IN ('open', 'assigned')
          AND deadline < datetime('now')`,
     );
-    // sql.js run() doesn't return affected rows directly; return 0 as placeholder
     return 0;
+  });
+}
+
+// ── Task Reviews (mutual poster↔worker ratings) ─────────────────────────────
+
+export async function submitTaskReview(input: {
+  taskId: number;
+  reviewerId: number;
+  rating: number;
+  comment?: string;
+}): Promise<TaskReviewRecord> {
+  return withWrite((db) => {
+    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [input.taskId]);
+    if (!task) throw new Error("Task not found");
+    if (task.status !== "approved") throw new Error("Can only review approved tasks");
+
+    const isPoster = task.poster_id === input.reviewerId;
+    const isWorker = task.assignee_id === input.reviewerId;
+    if (!isPoster && !isWorker) throw new Error("Only the poster or worker can review");
+
+    const role = isPoster ? "poster" : "worker";
+    const revieweeId = isPoster ? task.assignee_id! : task.poster_id;
+
+    db.run(
+      `INSERT INTO task_reviews (task_id, reviewer_id, reviewee_id, role, rating, comment)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [input.taskId, input.reviewerId, revieweeId, role, input.rating, input.comment ?? null],
+    );
+
+    const id = getLastInsertId(db);
+    const row = queryOne<TaskReviewRow>(db, "SELECT * FROM task_reviews WHERE id = ?", [id]);
+    return mapReview(row!);
+  });
+}
+
+export async function getTaskReviews(taskId: number): Promise<TaskReviewRecord[]> {
+  return withRead((db) => {
+    const rows = queryAll<TaskReviewRow>(
+      db,
+      "SELECT * FROM task_reviews WHERE task_id = ? ORDER BY created_at ASC",
+      [taskId],
+    );
+    return rows.map(mapReview);
+  });
+}
+
+export async function getUserReviews(userId: number): Promise<TaskReviewRecord[]> {
+  return withRead((db) => {
+    const rows = queryAll<TaskReviewRow>(
+      db,
+      "SELECT * FROM task_reviews WHERE reviewee_id = ? ORDER BY created_at DESC LIMIT 50",
+      [userId],
+    );
+    return rows.map(mapReview);
+  });
+}
+
+export async function getUserTaskStats(userId: number): Promise<{
+  tasksCompleted: number;
+  tasksPosted: number;
+  avgWorkerRating: number;
+  avgPosterRating: number;
+  totalEarnings: number;
+  categoryBreakdown: Record<string, number>;
+}> {
+  return withRead((db) => {
+    const completed = queryOne<{ cnt: number }>(
+      db,
+      "SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? AND status = 'approved'",
+      [userId],
+    );
+    const posted = queryOne<{ cnt: number }>(
+      db,
+      "SELECT COUNT(*) as cnt FROM tasks WHERE poster_id = ?",
+      [userId],
+    );
+    const workerRating = queryOne<{ avg: number | null }>(
+      db,
+      "SELECT AVG(rating) as avg FROM task_reviews WHERE reviewee_id = ? AND role = 'poster'",
+      [userId],
+    );
+    const posterRating = queryOne<{ avg: number | null }>(
+      db,
+      "SELECT AVG(rating) as avg FROM task_reviews WHERE reviewee_id = ? AND role = 'worker'",
+      [userId],
+    );
+    const earnings = queryOne<{ total: number | null }>(
+      db,
+      "SELECT SUM(reward) as total FROM tasks WHERE assignee_id = ? AND status = 'approved'",
+      [userId],
+    );
+
+    // Category breakdown for completed tasks
+    const catRows = queryAll<{ category: string; cnt: number }>(
+      db,
+      `SELECT category, COUNT(*) as cnt FROM tasks
+       WHERE assignee_id = ? AND status = 'approved'
+       GROUP BY category ORDER BY cnt DESC`,
+      [userId],
+    );
+    const categoryBreakdown: Record<string, number> = {};
+    for (const row of catRows) {
+      categoryBreakdown[row.category] = row.cnt;
+    }
+
+    return {
+      tasksCompleted: completed?.cnt ?? 0,
+      tasksPosted: posted?.cnt ?? 0,
+      avgWorkerRating: workerRating?.avg ? Math.round(workerRating.avg * 10) / 10 : 0,
+      avgPosterRating: posterRating?.avg ? Math.round(posterRating.avg * 10) / 10 : 0,
+      totalEarnings: earnings?.total ?? 0,
+      categoryBreakdown,
+    };
+  });
+}
+
+// ── Task history helpers ────────────────────────────────────────────────────
+
+export async function listTasksByWorker(
+  userId: number,
+  limit = 20,
+): Promise<TaskRecord[]> {
+  return withRead((db) => {
+    const rows = queryAll<TaskRow>(
+      db,
+      "SELECT * FROM tasks WHERE assignee_id = ? ORDER BY id DESC LIMIT ?",
+      [userId, limit],
+    );
+    return rows.map(mapTask);
+  });
+}
+
+export async function listTasksByPoster(
+  userId: number,
+  limit = 20,
+): Promise<TaskRecord[]> {
+  return withRead((db) => {
+    const rows = queryAll<TaskRow>(
+      db,
+      "SELECT * FROM tasks WHERE poster_id = ? ORDER BY id DESC LIMIT ?",
+      [userId, limit],
+    );
+    return rows.map(mapTask);
   });
 }

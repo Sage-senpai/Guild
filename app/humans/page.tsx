@@ -62,12 +62,20 @@ export default async function HumansPage({
               credits. Proof of Personhood required — Sybil-resistant by design.
             </p>
           </div>
-          <Link
-            href="/humans/post"
-            className="shrink-0 rounded-2xl bg-white px-6 py-3 text-sm font-bold text-ink shadow-lg transition hover:bg-chalk hover:-translate-y-0.5"
-          >
-            Post a Task
-          </Link>
+          <div className="flex shrink-0 flex-col gap-2">
+            <Link
+              href="/humans/post"
+              className="rounded-2xl bg-white px-6 py-3 text-center text-sm font-bold text-ink shadow-lg transition hover:bg-chalk hover:-translate-y-0.5"
+            >
+              Post a Task
+            </Link>
+            <Link
+              href="/humans/my"
+              className="rounded-2xl border border-white/30 px-6 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              My Tasks
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveUserId } from "@/lib/agent-service";
-import { getKiltCredential, getTaskById, isHumanVerified } from "@/lib/task-service";
+import { getKiltCredential, getTaskById, getTaskReviews, isHumanVerified } from "@/lib/task-service";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +22,16 @@ export async function GET(
   }
 
   const userId = await resolveUserId(request);
-  const credential = await getKiltCredential(userId);
+  const [credential, reviews] = await Promise.all([
+    getKiltCredential(userId),
+    getTaskReviews(taskId),
+  ]);
   const verified = isHumanVerified(credential);
 
   return NextResponse.json({
     task,
     userId,
     verified,
+    reviews,
   });
 }

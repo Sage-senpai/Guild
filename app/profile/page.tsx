@@ -257,6 +257,33 @@ function ProfileContent() {
         )}
       </section>
 
+      {/* Task activity quick links */}
+      <section className="panel p-6 sm:p-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-ink">Task Activity</h2>
+          <Link
+            href="/humans/my"
+            className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal"
+          >
+            Manage Tasks
+          </Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-ink/10 px-4 py-3 text-center">
+            <p className="text-2xl font-black text-ink">{reputation.tasksCompleted}</p>
+            <p className="muted text-xs font-semibold">Completed</p>
+          </div>
+          <div className="rounded-xl border border-ink/10 px-4 py-3 text-center">
+            <p className="text-2xl font-black text-ink">{reputation.tasksPosted}</p>
+            <p className="muted text-xs font-semibold">Posted</p>
+          </div>
+          <div className="rounded-xl border border-ink/10 px-4 py-3 text-center">
+            <p className="text-2xl font-black text-ink">{reputation.tasksDisputed}</p>
+            <p className="muted text-xs font-semibold">Disputed</p>
+          </div>
+        </div>
+      </section>
+
       {/* Recent credit activity */}
       <section className="panel p-6 sm:p-8">
         <h2 className="mb-4 text-lg font-bold text-ink">Recent Credit Activity</h2>

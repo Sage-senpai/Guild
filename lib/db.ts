@@ -342,6 +342,25 @@ async function initializeSchema(db: Database): Promise<void> {
     );
   `);
 
+  // ── Task Reviews (poster↔worker mutual ratings) ─────────────────
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS task_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      reviewer_id INTEGER NOT NULL,
+      reviewee_id INTEGER NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('poster', 'worker')),
+      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(task_id) REFERENCES tasks(id),
+      FOREIGN KEY(reviewer_id) REFERENCES users(id),
+      FOREIGN KEY(reviewee_id) REFERENCES users(id),
+      UNIQUE(task_id, reviewer_id)
+    );
+  `);
+
   ensureColumn(db, "agents", "avg_rating", "REAL NOT NULL DEFAULT 0");
   ensureColumn(db, "agents", "total_reviews", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "agents", "listing_status", "TEXT NOT NULL DEFAULT 'active'");

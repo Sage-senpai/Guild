@@ -7,8 +7,9 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { CancelButton, ReviewActions, TaskActionsClient } from "@/components/task-actions-client";
+import { useToast } from "@/components/toast-provider";
 import { apiFetch } from "@/lib/api-fetch";
-import type { TaskRecord } from "@/lib/types";
+import type { TaskRecord, TaskReviewRecord } from "@/lib/types";
 
 const CATEGORY_ICONS: Record<string, string> = {
   testnet: "🔗",
@@ -53,6 +54,7 @@ type TaskPageData = {
   task: TaskRecord;
   userId: number;
   verified: boolean;
+  reviews: TaskReviewRecord[];
 };
 
 export default function TaskDetailPage() {
@@ -125,9 +127,10 @@ export default function TaskDetailPage() {
     );
   }
 
-  const { task, userId, verified } = data;
+  const { task, userId, verified, reviews } = data;
   const isWorker = task.assigneeId === userId;
   const isPoster = task.posterId === userId;
+  const hasReviewed = reviews.some((r) => r.reviewerId === userId);
   const icon = CATEGORY_ICONS[task.category] ?? "📌";
   const remaining = timeRemaining(task.deadline);
 
@@ -214,7 +217,122 @@ export default function TaskDetailPage() {
             </div>
           </details>
         )}
+
+        {/* Review form (shown after task approved, if user hasn't reviewed yet) */}
+        {task.status === "approved" && (isPoster || isWorker) && !hasReviewed && (
+          <TaskReviewForm taskId={task.id} onSubmitted={() => load()} />
+        )}
+
+        {/* Existing reviews */}
+        {reviews.length > 0 && (
+          <div className="glass rounded-2xl p-5">
+            <h3 className="mb-3 font-bold">Reviews</h3>
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="rounded-xl border border-ink/10 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-[var(--font-mono)] text-sm">
+                      {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
+                    </span>
+                    <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-semibold uppercase">
+                      by {r.role}
+                    </span>
+                  </div>
+                  {r.comment && <p className="muted mt-1.5">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Link to worker profile */}
+        {task.assigneeId && (
+          <div className="text-center">
+            <Link
+              href={`/humans/worker/${task.assigneeId}`}
+              className="muted text-sm font-semibold hover:text-ink"
+            >
+              View worker profile →
+            </Link>
+          </div>
+        )}
       </div>
     </main>
+  );
+}
+
+// ── Inline review form ───────────────────────────────────────────────────────
+
+function TaskReviewForm({ taskId, onSubmitted }: { taskId: number; onSubmitted: () => void }) {
+  const { success: toastSuccess, error: toastErr } = useToast();
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await apiFetch(`/api/tasks/${taskId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, comment: comment || undefined }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        toastErr(data.error ?? "Failed to submit review");
+        return;
+      }
+      toastSuccess("Review submitted! Thanks for your feedback.");
+      onSubmitted();
+    } catch {
+      toastErr("Network error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="glass rounded-2xl p-5">
+      <h3 className="mb-3 font-bold">Leave a Review</h3>
+
+      <div className="mb-3">
+        <label className="mb-1 block text-sm font-semibold">Rating</label>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setRating(v)}
+              className={`text-xl transition ${v <= rating ? "text-amber-400" : "text-ink/20"}`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <label className="mb-1 block text-sm font-semibold">
+          Comment <span className="muted font-normal">(optional)</span>
+        </label>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={2}
+          maxLength={500}
+          placeholder="How was the experience?"
+          className="w-full rounded-xl border border-ink/20 bg-transparent p-3 text-sm outline-none ring-flare focus:ring-2"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="rounded-full bg-ink px-5 py-2 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-50"
+      >
+        {submitting ? "Submitting…" : "Submit Review"}
+      </button>
+    </form>
   );
 }
