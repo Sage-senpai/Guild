@@ -5,6 +5,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
+import type { Chain } from "wagmi/chains";
 import {
   arbitrum,
   base,
@@ -14,6 +15,33 @@ import {
   optimism,
   polygon,
 } from "wagmi/chains";
+
+// ── Polkadot Hub (MainNet) — EVM-compatible via ETH RPC proxy ────────────
+const polkadotHub: Chain = {
+  id: 420420419,
+  name: "Polkadot Hub",
+  nativeCurrency: { name: "DOT", symbol: "DOT", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://eth-rpc.polkadot.io"] },
+  },
+  blockExplorers: {
+    default: { name: "Blockscout", url: "https://blockscout.polkadot.io" },
+  },
+};
+
+// ── Polkadot Hub TestNet (Paseo) — for development & hackathons ──────────
+const polkadotHubTestnet: Chain = {
+  id: 420420417,
+  name: "Polkadot Hub TestNet",
+  nativeCurrency: { name: "PAS", symbol: "PAS", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://eth-rpc-testnet.polkadot.io"] },
+  },
+  blockExplorers: {
+    default: { name: "Blockscout", url: "https://blockscout-testnet.polkadot.io" },
+  },
+  testnet: true,
+};
 
 const projectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ||
@@ -29,13 +57,15 @@ export const wagmiConfig = getDefaultConfig({
   appName: "Guild",
   projectId,
   chains: [
+    polkadotHub,
+    polkadotHubTestnet,
+    moonbeam,
+    moonbaseAlpha,
     mainnet,
     polygon,
     optimism,
     arbitrum,
     base,
-    moonbeam,
-    moonbaseAlpha,
   ],
   ssr: true,
 });
