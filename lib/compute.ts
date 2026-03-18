@@ -113,6 +113,30 @@ async function runOpenRouterInference(params: {
   if (!response.ok) {
     const detail = (await response.json().catch(() => null)) as OpenRouterPayload | null;
     const message = detail?.error?.message ?? `HTTP ${response.status}`;
+
+    // On rate limit (429), retry once with a different free model
+    if (response.status === 429 && selectedModel !== "google/gemma-3-27b-it:free") {
+      const retryModel = "google/gemma-3-27b-it:free";
+      const retryMessages = messages;
+      const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000",
+          "X-Title": "Guild",
+        },
+        body: JSON.stringify({ model: retryModel, messages: retryMessages, temperature: 0.7 }),
+      });
+      if (retryResponse.ok) {
+        const retryPayload = (await retryResponse.json()) as OpenRouterPayload;
+        const retryOutput = extractContent(retryPayload.choices?.[0]?.message?.content);
+        if (retryOutput) {
+          return { output: retryOutput, mode: "openrouter", model: retryModel, providerAddress: "openrouter" };
+        }
+      }
+    }
+
     throw new Error(`OpenRouter call failed (${response.status}): ${message}`);
   }
 
