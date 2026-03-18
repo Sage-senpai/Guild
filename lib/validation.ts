@@ -4,7 +4,7 @@ import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODELS, TASK_CATEGORIES }
 
 export const createAgentSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  description: z.string().trim().min(3).max(400),
+  description: z.string().trim().min(3).max(1000),
   category: z.enum(AGENT_CATEGORIES),
   model: z.string().default("openrouter/free"),
   systemPrompt: z.string().trim().min(5).max(5000),

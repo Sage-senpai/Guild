@@ -219,7 +219,7 @@ function CreateAgentForm() {
               name="description"
               required
               minLength={3}
-              maxLength={400}
+              maxLength={1000}
               rows={3}
               className="w-full rounded-xl border border-ink/20 px-3 py-2 outline-none ring-flare transition focus:ring-2"
               placeholder="Writes viral captions, hooks, and CTA copy."
