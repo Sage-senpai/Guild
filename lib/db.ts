@@ -59,6 +59,7 @@ async function initializeSchema(client: Client): Promise<void> {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY,
       wallet_address TEXT NOT NULL UNIQUE,
+      username TEXT,
       credits REAL NOT NULL DEFAULT 100,
       integrity_score INTEGER NOT NULL DEFAULT 80
     );

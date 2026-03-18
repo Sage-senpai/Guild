@@ -58,6 +58,7 @@ type RunRow = {
 type UserRow = {
   id: number;
   wallet_address: string;
+  username: string | null;
   credits: number;
   integrity_score: number;
 };
@@ -136,6 +137,7 @@ function mapUser(row: UserRow): UserRecord {
   return {
     id: row.id,
     walletAddress: row.wallet_address,
+    username: row.username ?? null,
     credits: Number(row.credits),
     integrityScore: Number(row.integrity_score ?? 80),
   };
@@ -718,4 +720,26 @@ export async function readKnowledgeFromLocal(agent: AgentRecord): Promise<string
   }
   const content = await fs.readFile(agent.knowledgeLocalPath);
   return content.toString("utf-8");
+}
+
+export async function updateUsername(userId: number, username: string | null): Promise<void> {
+  await withWrite(async (db) => {
+    await dbRun(db, "UPDATE users SET username = ? WHERE id = ?", [username, userId]);
+  });
+}
+
+export async function deleteUserAccount(userId: number): Promise<void> {
+  await withWrite(async (db) => {
+    // Delete user's data in dependency order
+    await dbRun(db, "DELETE FROM credit_ledger WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM topup_orders WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM task_reviews WHERE reviewer_id = ? OR reviewee_id = ?", [userId, userId]);
+    await dbRun(db, "DELETE FROM task_applications WHERE applicant_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM kilt_credentials WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM user_badges WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM agent_reviews WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM runs WHERE user_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM agents WHERE creator_id = ?", [userId]);
+    await dbRun(db, "DELETE FROM users WHERE id = ?", [userId]);
+  });
 }

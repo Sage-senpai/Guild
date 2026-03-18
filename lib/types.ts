@@ -104,6 +104,7 @@ export type RunRecord = {
 export type UserRecord = {
   id: number;
   walletAddress: string;
+  username: string | null;
   credits: number;
   integrityScore: number;
 };

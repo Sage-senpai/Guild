@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const NAV_LINKS = [
-  { href: "/",        label: "Agents"  },
-  { href: "/humans",  label: "Humans"  },
-  { href: "/credits", label: "Credits" },
-  { href: "/profile", label: "Profile" },
+  { href: "/",        label: "Agents",  tour: "nav-agents"  },
+  { href: "/humans",  label: "Humans",  tour: "nav-humans"  },
+  { href: "/credits", label: "Credits", tour: "nav-credits" },
+  { href: "/profile", label: "Profile", tour: "nav-profile" },
 ] as const;
 
 export function SiteHeader() {
@@ -35,12 +35,13 @@ export function SiteHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main navigation">
-          {NAV_LINKS.map(({ href, label }) => {
+          {NAV_LINKS.map(({ href, label, tour }) => {
             const active = href === "/" ? pathname === "/" : !!pathname?.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={tour}
                 className={[
                   "rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-150",
                   active
@@ -55,7 +56,7 @@ export function SiteHeader() {
         </nav>
 
         {/* Wallet connect */}
-        <div className="ml-auto shrink-0">
+        <div className="ml-auto shrink-0" data-tour="connect-wallet">
           <ConnectButton accountStatus="avatar" chainStatus="none" showBalance={false} />
         </div>
       </div>

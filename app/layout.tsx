@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 
+import { OnboardingWrapper } from "@/components/onboarding-wrapper";
 import { SiteHeader } from "@/components/site-header";
 import { ToastProvider } from "@/components/toast-provider";
 import { Web3Provider } from "@/components/web3-provider";
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <SiteHeader />
               <main className="mt-8">{children}</main>
             </div>
+            <OnboardingWrapper />
           </ToastProvider>
         </Web3Provider>
       </body>

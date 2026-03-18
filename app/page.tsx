@@ -109,8 +109,10 @@ export default async function HomePage({
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {agents.map((agent) => (
-                <AgentCard key={agent.id} agent={agent} />
+              {agents.map((agent, i) => (
+                <div key={agent.id} {...(i === 0 ? { "data-tour": "first-agent-card" } : {})}>
+                  <AgentCard agent={agent} />
+                </div>
               ))}
             </div>
           )}

@@ -5,6 +5,9 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useOnboarding } from "@/components/onboarding-modal";
+import { useTour } from "@/components/guided-tour";
+import { useToast } from "@/components/toast-provider";
 import { WalletGate } from "@/components/wallet-gate";
 import { apiFetch } from "@/lib/api-fetch";
 import { formatCredits, formatDate, formatUsd } from "@/lib/format";
@@ -15,6 +18,7 @@ type ProfileData = {
   user: {
     id: number;
     walletAddress: string;
+    username: string | null;
     credits: number;
     integrityScore: number;
   };
@@ -350,6 +354,9 @@ function ProfileContent() {
         )}
       </section>
 
+      {/* Account Settings */}
+      <AccountSettings user={user} onProfileUpdated={() => window.location.reload()} />
+
       {/* Your agents */}
       <section className="panel p-6 sm:p-8">
         <div className="mb-4 flex items-center justify-between">
@@ -415,5 +422,173 @@ function ProfileContent() {
         )}
       </section>
     </main>
+  );
+}
+
+// ── Account Settings ──────────────────────────────────────────────────────────
+
+function AccountSettings({
+  user,
+  onProfileUpdated,
+}: {
+  user: ProfileData["user"];
+  onProfileUpdated: () => void;
+}) {
+  const { success: toastSuccess, error: toastError } = useToast();
+  const { resetOnboarding, setShowOnboarding } = useOnboarding();
+  const { resetTour, startTour } = useTour();
+
+  const [username, setUsername] = useState(user.username ?? "");
+  const [savingUsername, setSavingUsername] = useState(false);
+
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  async function saveUsername() {
+    setSavingUsername(true);
+    try {
+      const res = await apiFetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username || null }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        toastError(data.error ?? "Failed to update username");
+        return;
+      }
+      toastSuccess("Username updated!");
+      onProfileUpdated();
+    } catch {
+      toastError("Network error");
+    } finally {
+      setSavingUsername(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await apiFetch("/api/profile", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: deleteInput }),
+      });
+      const data = (await res.json()) as { error?: string; deleted?: boolean };
+      if (!res.ok) {
+        toastError(data.error ?? "Failed to delete account");
+        setDeleting(false);
+        return;
+      }
+      toastSuccess("Account deleted. Redirecting...");
+      localStorage.clear();
+      setTimeout(() => { window.location.href = "/"; }, 1500);
+    } catch {
+      toastError("Network error");
+      setDeleting(false);
+    }
+  }
+
+  function replayOnboarding() {
+    resetOnboarding();
+    setShowOnboarding(true);
+  }
+
+  function replayTour() {
+    resetTour();
+    setTimeout(() => startTour(), 300);
+  }
+
+  return (
+    <section className="panel p-6 sm:p-8">
+      <h2 className="mb-5 text-lg font-bold text-ink">Account Settings</h2>
+
+      {/* Username */}
+      <div className="mb-6">
+        <label className="mb-1.5 block text-sm font-semibold text-ink">Username</label>
+        <div className="flex gap-2">
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Choose a username"
+            maxLength={30}
+            className="flex-1 rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare focus:ring-2"
+          />
+          <button
+            onClick={saveUsername}
+            disabled={savingUsername}
+            className="shrink-0 rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal disabled:opacity-50"
+          >
+            {savingUsername ? "Saving..." : "Save"}
+          </button>
+        </div>
+        <p className="muted mt-1 text-xs">2-30 characters: letters, numbers, _, ., -</p>
+      </div>
+
+      {/* Help & Tour */}
+      <div className="mb-6">
+        <label className="mb-1.5 block text-sm font-semibold text-ink">Help & Onboarding</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={replayOnboarding}
+            className="rounded-xl border border-ink/20 px-4 py-2 text-sm font-semibold transition hover:bg-ink/5"
+          >
+            Replay Onboarding
+          </button>
+          <button
+            onClick={replayTour}
+            className="rounded-xl border border-ink/20 px-4 py-2 text-sm font-semibold transition hover:bg-ink/5"
+          >
+            Replay Guided Tour
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Account */}
+      <div className="rounded-2xl border border-flare/20 bg-flare/5 p-4">
+        <h3 className="mb-1 text-sm font-bold text-flare">Danger Zone</h3>
+        <p className="muted mb-3 text-xs">
+          Permanently delete your account, agents, and all associated data. This cannot be undone.
+        </p>
+
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="rounded-xl border border-flare/30 px-4 py-2 text-xs font-semibold text-flare transition hover:bg-flare/10"
+          >
+            Delete My Account
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-flare">
+              Type your wallet address to confirm:
+            </p>
+            <p className="break-all font-mono text-[10px] text-ink/50">{user.walletAddress}</p>
+            <input
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder="0x..."
+              className="w-full rounded-xl border border-flare/30 bg-transparent px-3 py-2 text-sm outline-none ring-flare focus:ring-2"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting || deleteInput.toLowerCase() !== user.walletAddress.toLowerCase()}
+                className="rounded-xl bg-flare px-4 py-2 text-xs font-bold text-white transition hover:bg-flare/80 disabled:opacity-40"
+              >
+                {deleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); }}
+                className="rounded-xl border border-ink/20 px-4 py-2 text-xs font-semibold transition hover:bg-ink/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
