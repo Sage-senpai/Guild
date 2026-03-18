@@ -52,8 +52,10 @@ export async function POST(request: Request) {
   });
 
   if (!payload.success) {
+    const flat = payload.error.flatten();
+    console.error("[POST /api/agents] Validation failed:", JSON.stringify(flat));
     return NextResponse.json(
-      { error: "Invalid input", details: payload.error.flatten() },
+      { error: `Invalid input: ${Object.entries(flat.fieldErrors).map(([k, v]) => `${k}: ${v}`).join(", ")}`, details: flat },
       { status: 400 },
     );
   }
