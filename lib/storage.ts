@@ -73,7 +73,7 @@ async function uploadToMock(data: Uint8Array): Promise<UploadResult> {
   const rootHash = sha256Hex(data);
   const filePath = path.join(MOCK_STORAGE_DIR, rootHash);
   await fs.writeFile(filePath, data);
-  return { rootHash, uri: uriFromCid(rootHash), transactionHash: null, mode: "mock" };
+  return { rootHash, uri: uriFromCid(rootHash), transactionHash: `mock-tx-${rootHash.slice(0, 16)}`, mode: "mock" };
 }
 
 async function downloadFromMock(
