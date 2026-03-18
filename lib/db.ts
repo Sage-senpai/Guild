@@ -144,6 +144,8 @@ async function initializeSchema(client: Client): Promise<void> {
       proof_url TEXT,
       deadline TEXT NOT NULL,
       max_applicants INTEGER,
+      max_workers INTEGER NOT NULL DEFAULT 1,
+      completed_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       completed_at TEXT,
       FOREIGN KEY(poster_id) REFERENCES users(id),
@@ -211,6 +213,18 @@ async function initializeSchema(client: Client): Promise<void> {
       FOREIGN KEY(reviewer_id) REFERENCES users(id),
       FOREIGN KEY(reviewee_id) REFERENCES users(id),
       UNIQUE(task_id, reviewer_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT,
+      link TEXT,
+      read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
     );
   `);
 

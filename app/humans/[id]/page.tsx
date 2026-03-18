@@ -172,6 +172,22 @@ export default function TaskDetailPage() {
             )}
           </div>
 
+          {/* Progress bar for multi-worker tasks */}
+          {task.maxWorkers > 1 && (
+            <div className="mb-4">
+              <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
+                <span className="text-ink/60">Completion Progress</span>
+                <span className="text-ink">{task.completedCount}/{task.maxWorkers} workers done</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-ink/10">
+                <div
+                  className="h-full rounded-full bg-mint transition-all"
+                  style={{ width: `${Math.min(100, (task.completedCount / task.maxWorkers) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="muted rounded-2xl bg-ink/[0.03] p-4 text-sm leading-relaxed whitespace-pre-wrap">
             {task.description}
           </div>
@@ -192,6 +208,11 @@ export default function TaskDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Poster: edit task */}
+        {isPoster && (task.status === "open" || task.status === "assigned") && (
+          <TaskEditForm task={task} onUpdated={() => load()} />
+        )}
 
         {/* Worker actions (claim / apply / submit proof) */}
         {!isPoster && (
@@ -333,6 +354,116 @@ function TaskReviewForm({ taskId, onSubmitted }: { taskId: number; onSubmitted: 
       >
         {submitting ? "Submitting…" : "Submit Review"}
       </button>
+    </form>
+  );
+}
+
+// ── Task Edit Form ───────────────────────────────────────────────────────────
+
+function TaskEditForm({ task, onUpdated }: { task: TaskRecord; onUpdated: () => void }) {
+  const { success: toastSuccess, error: toastErr } = useToast();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description);
+  const [maxWorkers, setMaxWorkers] = useState(String(task.maxWorkers));
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await apiFetch(`/api/tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title !== task.title ? title : undefined,
+          description: description !== task.description ? description : undefined,
+          maxWorkers: Number(maxWorkers) !== task.maxWorkers ? Number(maxWorkers) : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        toastErr(data.error ?? "Failed to update task");
+        return;
+      }
+      toastSuccess("Task updated! All applicants and workers have been notified.");
+      setOpen(false);
+      onUpdated();
+    } catch {
+      toastErr("Network error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded-xl border border-ink/20 px-4 py-2 text-sm font-semibold transition hover:bg-ink/5"
+      >
+        Edit Task
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="glass rounded-2xl p-5">
+      <h3 className="mb-4 font-bold">Edit Task</h3>
+
+      <div className="mb-3">
+        <label className="mb-1 block text-sm font-semibold">Title</label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+          className="w-full rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare focus:ring-2"
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="mb-1 block text-sm font-semibold">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          maxLength={1000}
+          className="w-full rounded-xl border border-ink/20 bg-transparent p-3 text-sm outline-none ring-flare focus:ring-2"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="mb-1 block text-sm font-semibold">Max Workers</label>
+        <input
+          type="number"
+          value={maxWorkers}
+          onChange={(e) => setMaxWorkers(e.target.value)}
+          min={1}
+          max={100}
+          className="w-28 rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare focus:ring-2"
+        />
+        <p className="muted mt-0.5 text-xs">
+          Currently {task.completedCount}/{task.maxWorkers} completed
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-full bg-ink px-5 py-2 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-50"
+        >
+          {submitting ? "Saving…" : "Save Changes"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-full border border-ink/20 px-5 py-2 text-sm font-semibold transition hover:bg-ink/5"
+        >
+          Cancel
+        </button>
+      </div>
+      <p className="muted mt-2 text-xs">All applicants and workers will be notified of changes.</p>
     </form>
   );
 }

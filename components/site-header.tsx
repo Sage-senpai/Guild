@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { NotificationBell } from "@/components/notification-bell";
 
 const NAV_LINKS = [
   { href: "/",        label: "Agents",  tour: "nav-agents"  },
@@ -55,9 +56,12 @@ export function SiteHeader() {
           })}
         </nav>
 
-        {/* Wallet connect */}
-        <div className="ml-auto shrink-0" data-tour="connect-wallet">
-          <ConnectButton accountStatus="avatar" chainStatus="none" showBalance={false} />
+        {/* Notifications + Wallet connect */}
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <NotificationBell />
+          <div data-tour="connect-wallet">
+            <ConnectButton accountStatus="avatar" chainStatus="none" showBalance={false} />
+          </div>
         </div>
       </div>
     </header>

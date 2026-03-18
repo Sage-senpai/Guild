@@ -2,6 +2,7 @@ import { dbRun, getLastInsertId, queryAll, queryOne, withRead, withWrite } from 
 import { TASK_CATEGORIES } from "@/lib/types";
 import type {
   KiltCredentialRecord,
+  NotificationRecord,
   TaskApplicationRecord,
   TaskCategory,
   TaskRecord,
@@ -32,8 +33,21 @@ type TaskRow = {
   proof_url: string | null;
   deadline: string;
   max_applicants: number | null;
+  max_workers: number;
+  completed_count: number;
   created_at: string;
   completed_at: string | null;
+};
+
+type NotificationRow = {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: number;
+  created_at: string;
 };
 
 type TaskApplicationRow = {
@@ -95,6 +109,8 @@ function mapTask(row: TaskRow): TaskRecord {
     proofUrl: row.proof_url,
     deadline: row.deadline,
     maxApplicants: row.max_applicants,
+    maxWorkers: Number(row.max_workers ?? 1),
+    completedCount: Number(row.completed_count ?? 0),
     createdAt: row.created_at,
     completedAt: row.completed_at,
   };
@@ -209,6 +225,7 @@ export async function createTask(input: {
   reward: number;
   deadlineHours: number;
   maxApplicants?: number;
+  maxWorkers?: number;
   posterId: number;
 }): Promise<{ task: TaskRecord; user: UserRecord }> {
   const fee = calcFee(input.reward);
@@ -231,8 +248,8 @@ export async function createTask(input: {
 
     await dbRun(db,
       `INSERT INTO tasks (title, description, category, task_type, reward, platform_fee,
-        poster_id, deadline, max_applicants)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        poster_id, deadline, max_applicants, max_workers)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         input.title,
         input.description,
@@ -243,6 +260,7 @@ export async function createTask(input: {
         input.posterId,
         deadline,
         input.maxApplicants ?? null,
+        input.maxWorkers ?? 1,
       ],
     );
 
@@ -707,5 +725,125 @@ export async function listTasksByPoster(
       [userId, limit],
     );
     return rows.map(mapTask);
+  });
+}
+
+// ── Task Editing ─────────────────────────────────────────────────────────────
+
+export async function updateTask(
+  taskId: number,
+  posterId: number,
+  updates: {
+    title?: string;
+    description?: string;
+    maxWorkers?: number;
+    deadline?: string;
+  },
+): Promise<TaskRecord> {
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    if (!task) throw new Error("Task not found");
+    if (task.poster_id !== posterId) throw new Error("Not the task poster");
+    if (task.status !== "open" && task.status !== "assigned") throw new Error("Task cannot be edited in this state");
+
+    const sets: string[] = [];
+    const args: Array<string | number | null> = [];
+
+    if (updates.title) { sets.push("title = ?"); args.push(updates.title); }
+    if (updates.description) { sets.push("description = ?"); args.push(updates.description); }
+    if (updates.maxWorkers !== undefined) { sets.push("max_workers = ?"); args.push(updates.maxWorkers); }
+    if (updates.deadline) { sets.push("deadline = ?"); args.push(updates.deadline); }
+
+    if (sets.length === 0) throw new Error("Nothing to update");
+
+    args.push(taskId);
+    await dbRun(db, `UPDATE tasks SET ${sets.join(", ")} WHERE id = ?`, args);
+
+    // Notify all applicants and assignee about the edit
+    const applicants = await queryAll<{ applicant_id: number }>(
+      db, "SELECT applicant_id FROM task_applications WHERE task_id = ?", [taskId],
+    );
+    const notifyIds = new Set(applicants.map((a) => a.applicant_id));
+    if (task.assignee_id) notifyIds.add(task.assignee_id);
+
+    for (const uid of notifyIds) {
+      await dbRun(db,
+        `INSERT INTO notifications (user_id, type, title, body, link)
+         VALUES (?, 'task_updated', ?, ?, ?)`,
+        [uid, `Task updated: ${updates.title ?? task.title}`, "The poster has updated the task details. Check the latest requirements.", `/humans/${taskId}`],
+      );
+    }
+
+    const updated = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    if (!updated) throw new Error("Task missing after update");
+    return mapTask(updated);
+  });
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+function mapNotification(row: NotificationRow): NotificationRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    link: row.link,
+    read: Boolean(row.read),
+    createdAt: row.created_at,
+  };
+}
+
+export async function createNotification(
+  userId: number,
+  type: string,
+  title: string,
+  body?: string,
+  link?: string,
+): Promise<void> {
+  await withWrite(async (db) => {
+    await dbRun(db,
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, type, title, body ?? null, link ?? null],
+    );
+  });
+}
+
+export async function listNotifications(
+  userId: number,
+  limit = 20,
+): Promise<NotificationRecord[]> {
+  return withRead(async (db) => {
+    const rows = await queryAll<NotificationRow>(
+      db,
+      "SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+      [userId, limit],
+    );
+    return rows.map(mapNotification);
+  });
+}
+
+export async function getUnreadCount(userId: number): Promise<number> {
+  return withRead(async (db) => {
+    const row = await queryOne<{ count: number }>(
+      db, "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read = 0", [userId],
+    );
+    return row?.count ?? 0;
+  });
+}
+
+export async function markNotificationsRead(userId: number, ids?: number[]): Promise<void> {
+  await withWrite(async (db) => {
+    if (ids && ids.length > 0) {
+      const placeholders = ids.map(() => "?").join(",");
+      await dbRun(db,
+        `UPDATE notifications SET read = 1 WHERE user_id = ? AND id IN (${placeholders})`,
+        [userId, ...ids],
+      );
+    } else {
+      await dbRun(db, "UPDATE notifications SET read = 1 WHERE user_id = ?", [userId]);
+    }
   });
 }

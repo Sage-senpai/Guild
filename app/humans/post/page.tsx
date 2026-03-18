@@ -48,6 +48,7 @@ function PostTaskForm() {
   const [reward, setReward] = useState(2);
   const [deadlineHours, setDeadlineHours] = useState(24);
   const [maxApplicants, setMaxApplicants] = useState<string>("");
+  const [maxWorkers, setMaxWorkers] = useState<string>("1");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +72,9 @@ function PostTaskForm() {
     };
     if (taskType === "apply" && maxApplicants) {
       body.maxApplicants = Number(maxApplicants);
+    }
+    if (maxWorkers && Number(maxWorkers) > 1) {
+      body.maxWorkers = Number(maxWorkers);
     }
 
     try {
@@ -259,6 +263,24 @@ function PostTaskForm() {
               />
             </div>
           )}
+
+          {/* Max workers (how many people can complete) */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold">
+              How many people need to complete this?
+            </label>
+            <input
+              type="number"
+              value={maxWorkers}
+              onChange={(e) => setMaxWorkers(e.target.value)}
+              min={1}
+              max={100}
+              className="w-36 rounded-xl border border-ink/20 bg-transparent px-3 py-2 text-sm outline-none ring-flare focus:ring-2"
+            />
+            <p className="muted mt-0.5 text-xs">
+              Set to 1 for a single worker. Increase for tasks needing multiple completions.
+            </p>
+          </div>
 
           {/* Reward */}
           <div>

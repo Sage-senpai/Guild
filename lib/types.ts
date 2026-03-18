@@ -203,8 +203,21 @@ export type TaskRecord = {
   proofUrl: string | null;
   deadline: string;
   maxApplicants: number | null;
+  maxWorkers: number;
+  completedCount: number;
   createdAt: string;
   completedAt: string | null;
+};
+
+export type NotificationRecord = {
+  id: number;
+  userId: number;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
 };
 
 export type TaskApplicationRecord = {

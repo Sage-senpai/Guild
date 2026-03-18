@@ -56,6 +56,7 @@ export const createTaskSchema = z.object({
   reward: z.coerce.number().min(0.5).max(50),
   deadlineHours: z.coerce.number().int().min(1).max(168).default(24), // 1h–7 days
   maxApplicants: z.coerce.number().int().min(1).max(50).optional(),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(1),
 });
 
 export const applyTaskSchema = z.object({

@@ -90,6 +90,22 @@ export function TaskCard({ task, posterIntegrity }: { task: TaskRecord; posterIn
       {/* Description */}
       <p className="muted mb-4 line-clamp-3 flex-1 text-sm leading-relaxed">{task.description}</p>
 
+      {/* Progress bar (multi-worker tasks) */}
+      {task.maxWorkers > 1 && (
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold">
+            <span className="text-ink/60">Progress</span>
+            <span className="text-ink">{task.completedCount}/{task.maxWorkers} completed</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+            <div
+              className="h-full rounded-full bg-mint transition-all"
+              style={{ width: `${Math.min(100, (task.completedCount / task.maxWorkers) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Meta row */}
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-ink/8 pt-3 text-xs">
         <span className={`font-medium ${isExpired ? "font-semibold text-flare" : "muted"}`}>
@@ -100,6 +116,9 @@ export function TaskCard({ task, posterIntegrity }: { task: TaskRecord; posterIn
           <span className="flex items-center gap-1 muted" title="Poster integrity score">
             Poster <IntegrityMeter score={posterIntegrity} />
           </span>
+        )}
+        {task.maxWorkers > 1 && (
+          <span className="muted">{task.maxWorkers} workers needed</span>
         )}
         <span className="muted ml-auto">PoP required</span>
       </div>
