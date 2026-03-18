@@ -1,4 +1,4 @@
-import { getLastInsertId, queryAll, queryOne, withRead, withWrite } from "@/lib/db";
+import { dbRun, getLastInsertId, queryAll, queryOne, withRead, withWrite } from "@/lib/db";
 import { TASK_CATEGORIES } from "@/lib/types";
 import type {
   KiltCredentialRecord,
@@ -183,8 +183,8 @@ export async function listTasks(options: {
   const limit = options.limit ?? 20;
   params.push(limit);
 
-  return withRead((db) => {
-    const rows = queryAll<TaskRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TaskRow>(
       db,
       `SELECT * FROM tasks ${whereSql} ORDER BY id DESC LIMIT ?`,
       params,
@@ -194,8 +194,8 @@ export async function listTasks(options: {
 }
 
 export async function getTaskById(id: number): Promise<TaskRecord | null> {
-  return withRead((db) => {
-    const row = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [id]);
+  return withRead(async (db) => {
+    const row = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [id]);
     return row ? mapTask(row) : null;
   });
 }
@@ -215,20 +215,20 @@ export async function createTask(input: {
 
   const deadline = new Date(Date.now() + input.deadlineHours * 60 * 60 * 1000).toISOString();
 
-  return withWrite((db) => {
-    const poster = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [input.posterId]);
+  return withWrite(async (db) => {
+    const poster = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [input.posterId]);
     if (!poster) throw new Error("Poster not found");
     if (Number(poster.credits) < totalDeducted) throw new Error("INSUFFICIENT_CREDITS");
 
     // Reserve reward + fee from poster balance
-    db.run("UPDATE users SET credits = credits - ? WHERE id = ?", [totalDeducted, input.posterId]);
-    db.run(
+    await dbRun(db, "UPDATE users SET credits = credits - ? WHERE id = ?", [totalDeducted, input.posterId]);
+    await dbRun(db,
       `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, note)
        VALUES (?, 'task_reserve', ?, 'task', ?)`,
       [input.posterId, -totalDeducted, `Task created: ${input.title}`],
     );
 
-    db.run(
+    await dbRun(db,
       `INSERT INTO tasks (title, description, category, task_type, reward, platform_fee,
         poster_id, deadline, max_applicants)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -245,9 +245,9 @@ export async function createTask(input: {
       ],
     );
 
-    const taskId = getLastInsertId(db);
-    const taskRow = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
-    const updatedPoster = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [input.posterId]);
+    const taskId = await getLastInsertId(db);
+    const taskRow = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updatedPoster = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [input.posterId]);
 
     if (!taskRow || !updatedPoster) throw new Error("Failed to create task");
 
@@ -259,20 +259,20 @@ export async function claimTask(
   taskId: number,
   workerId: number,
 ): Promise<TaskRecord> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.status !== "open") throw new Error("TASK_NOT_OPEN");
     if (task.task_type !== "instant") throw new Error("TASK_NOT_INSTANT");
     if (task.poster_id === workerId) throw new Error("CANNOT_CLAIM_OWN_TASK");
     if (new Date(task.deadline) < new Date()) throw new Error("TASK_EXPIRED");
 
-    db.run(
+    await dbRun(db,
       "UPDATE tasks SET status = 'assigned', assignee_id = ? WHERE id = ?",
       [workerId, taskId],
     );
 
-    const updated = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updated = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!updated) throw new Error("Failed to claim task");
     return mapTask(updated);
   });
@@ -285,15 +285,15 @@ export async function applyForTask(
   applicantId: number,
   message?: string,
 ): Promise<TaskApplicationRecord> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.status !== "open") throw new Error("TASK_NOT_OPEN");
     if (task.task_type !== "apply") throw new Error("TASK_NOT_APPLY_MODE");
     if (task.poster_id === applicantId) throw new Error("CANNOT_APPLY_OWN_TASK");
     if (new Date(task.deadline) < new Date()) throw new Error("TASK_EXPIRED");
 
-    const existing = queryOne<TaskApplicationRow>(
+    const existing = await queryOne<TaskApplicationRow>(
       db,
       "SELECT * FROM task_applications WHERE task_id = ? AND applicant_id = ?",
       [taskId, applicantId],
@@ -302,7 +302,7 @@ export async function applyForTask(
 
     // Check max applicants cap
     if (task.max_applicants) {
-      const count = queryOne<{ n: number }>(
+      const count = await queryOne<{ n: number }>(
         db,
         "SELECT COUNT(*) AS n FROM task_applications WHERE task_id = ? AND status = 'pending'",
         [taskId],
@@ -310,13 +310,13 @@ export async function applyForTask(
       if (count && count.n >= task.max_applicants) throw new Error("MAX_APPLICANTS_REACHED");
     }
 
-    db.run(
+    await dbRun(db,
       "INSERT INTO task_applications (task_id, applicant_id, message) VALUES (?, ?, ?)",
       [taskId, applicantId, message ?? null],
     );
 
-    const appId = getLastInsertId(db);
-    const app = queryOne<TaskApplicationRow>(db, "SELECT * FROM task_applications WHERE id = ?", [appId]);
+    const appId = await getLastInsertId(db);
+    const app = await queryOne<TaskApplicationRow>(db, "SELECT * FROM task_applications WHERE id = ?", [appId]);
     if (!app) throw new Error("Failed to create application");
     return mapApplication(app);
   });
@@ -327,13 +327,13 @@ export async function selectApplicant(
   applicationId: number,
   posterId: number,
 ): Promise<{ task: TaskRecord; application: TaskApplicationRecord }> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.poster_id !== posterId) throw new Error("NOT_TASK_POSTER");
     if (task.status !== "open") throw new Error("TASK_NOT_OPEN");
 
-    const app = queryOne<TaskApplicationRow>(
+    const app = await queryOne<TaskApplicationRow>(
       db,
       "SELECT * FROM task_applications WHERE id = ? AND task_id = ?",
       [applicationId, taskId],
@@ -342,23 +342,23 @@ export async function selectApplicant(
     if (app.status !== "pending") throw new Error("APPLICATION_NOT_PENDING");
 
     // Select this applicant
-    db.run(
+    await dbRun(db,
       "UPDATE task_applications SET status = 'selected' WHERE id = ?",
       [applicationId],
     );
     // Reject all others
-    db.run(
+    await dbRun(db,
       "UPDATE task_applications SET status = 'rejected' WHERE task_id = ? AND id != ?",
       [taskId, applicationId],
     );
     // Assign task
-    db.run(
+    await dbRun(db,
       "UPDATE tasks SET status = 'assigned', assignee_id = ? WHERE id = ?",
       [app.applicant_id, taskId],
     );
 
-    const updatedTask = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
-    const updatedApp = queryOne<TaskApplicationRow>(
+    const updatedTask = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updatedApp = await queryOne<TaskApplicationRow>(
       db, "SELECT * FROM task_applications WHERE id = ?", [applicationId],
     );
     if (!updatedTask || !updatedApp) throw new Error("Failed to select applicant");
@@ -370,12 +370,12 @@ export async function listApplications(
   taskId: number,
   posterId: number,
 ): Promise<TaskApplicationRecord[]> {
-  return withRead((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT id, poster_id FROM tasks WHERE id = ?", [taskId]);
+  return withRead(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT id, poster_id FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.poster_id !== posterId) throw new Error("NOT_TASK_POSTER");
 
-    const rows = queryAll<TaskApplicationRow>(
+    const rows = await queryAll<TaskApplicationRow>(
       db,
       "SELECT * FROM task_applications WHERE task_id = ? ORDER BY created_at ASC",
       [taskId],
@@ -391,19 +391,19 @@ export async function submitProof(
   workerId: number,
   proofUrl: string,
 ): Promise<TaskRecord> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.assignee_id !== workerId) throw new Error("NOT_TASK_WORKER");
     if (task.status !== "assigned") throw new Error("TASK_NOT_ASSIGNED");
     if (new Date(task.deadline) < new Date()) throw new Error("TASK_DEADLINE_PASSED");
 
-    db.run(
+    await dbRun(db,
       "UPDATE tasks SET status = 'submitted', proof_url = ? WHERE id = ?",
       [proofUrl, taskId],
     );
 
-    const updated = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updated = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!updated) throw new Error("Failed to submit proof");
     return mapTask(updated);
   });
@@ -413,8 +413,8 @@ export async function approveTask(
   taskId: number,
   posterId: number,
 ): Promise<{ task: TaskRecord; workerCredits: number }> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.poster_id !== posterId) throw new Error("NOT_TASK_POSTER");
     if (task.status !== "submitted") throw new Error("TASK_NOT_SUBMITTED");
@@ -423,8 +423,8 @@ export async function approveTask(
     const reward = Number(task.reward);
 
     // Credit the worker
-    db.run("UPDATE users SET credits = credits + ? WHERE id = ?", [reward, task.assignee_id]);
-    db.run(
+    await dbRun(db, "UPDATE users SET credits = credits + ? WHERE id = ?", [reward, task.assignee_id]);
+    await dbRun(db,
       `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
        VALUES (?, 'task_earn', ?, 'task', ?, ?)`,
       [task.assignee_id, reward, taskId, `Task #${taskId} completed`],
@@ -433,19 +433,19 @@ export async function approveTask(
     // Platform fee was already deducted at task creation (task_reserve).
     // Record a zero-amount ledger entry for audit trail only.
     const fee = Number(task.platform_fee);
-    db.run(
+    await dbRun(db,
       `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
        VALUES (?, 'task_fee', 0, 'task', ?, ?)`,
       [task.poster_id, taskId, `Platform fee ${fee.toFixed(2)} (collected at creation) for task #${taskId}`],
     );
 
-    db.run(
+    await dbRun(db,
       "UPDATE tasks SET status = 'approved', completed_at = CURRENT_TIMESTAMP WHERE id = ?",
       [taskId],
     );
 
-    const updatedTask = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
-    const worker = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [task.assignee_id]);
+    const updatedTask = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const worker = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [task.assignee_id]);
     if (!updatedTask || !worker) throw new Error("Failed to approve task");
 
     return { task: mapTask(updatedTask), workerCredits: Number(worker.credits) };
@@ -456,15 +456,15 @@ export async function disputeTask(
   taskId: number,
   posterId: number,
 ): Promise<TaskRecord> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.poster_id !== posterId) throw new Error("NOT_TASK_POSTER");
     if (task.status !== "submitted") throw new Error("TASK_NOT_SUBMITTED");
 
-    db.run("UPDATE tasks SET status = 'disputed' WHERE id = ?", [taskId]);
+    await dbRun(db, "UPDATE tasks SET status = 'disputed' WHERE id = ?", [taskId]);
 
-    const updated = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updated = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!updated) throw new Error("Failed to dispute task");
     return mapTask(updated);
   });
@@ -474,8 +474,8 @@ export async function cancelTask(
   taskId: number,
   posterId: number,
 ): Promise<{ task: TaskRecord; user: UserRecord }> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
     if (!task) throw new Error("Task not found");
     if (task.poster_id !== posterId) throw new Error("NOT_TASK_POSTER");
     if (!["open", "assigned"].includes(task.status)) {
@@ -487,17 +487,17 @@ export async function cancelTask(
     const refund = reward + fee;
 
     // Refund full amount (reward + fee) to poster
-    db.run("UPDATE users SET credits = credits + ? WHERE id = ?", [refund, posterId]);
-    db.run(
+    await dbRun(db, "UPDATE users SET credits = credits + ? WHERE id = ?", [refund, posterId]);
+    await dbRun(db,
       `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
        VALUES (?, 'task_refund', ?, 'task', ?, ?)`,
       [posterId, refund, taskId, `Task #${taskId} cancelled — full refund`],
     );
 
-    db.run("UPDATE tasks SET status = 'cancelled' WHERE id = ?", [taskId]);
+    await dbRun(db, "UPDATE tasks SET status = 'cancelled' WHERE id = ?", [taskId]);
 
-    const updatedTask = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
-    const updatedPoster = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [posterId]);
+    const updatedTask = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [taskId]);
+    const updatedPoster = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [posterId]);
     if (!updatedTask || !updatedPoster) throw new Error("Failed to cancel task");
 
     return { task: mapTask(updatedTask), user: mapUser(updatedPoster) };
@@ -507,8 +507,8 @@ export async function cancelTask(
 // ── KILT Credentials ─────────────────────────────────────────────────────────
 
 export async function getKiltCredential(userId: number): Promise<KiltCredentialRecord | null> {
-  return withRead((db) => {
-    const row = queryOne<KiltCredentialRow>(
+  return withRead(async (db) => {
+    const row = await queryOne<KiltCredentialRow>(
       db,
       "SELECT * FROM kilt_credentials WHERE user_id = ?",
       [userId],
@@ -523,8 +523,8 @@ export async function upsertKiltCredential(params: {
   attestationId: string;
   expiresAt?: string | null;
 }): Promise<KiltCredentialRecord> {
-  return withWrite((db) => {
-    db.run(
+  return withWrite(async (db) => {
+    await dbRun(db,
       `INSERT INTO kilt_credentials
          (user_id, credential_hash, attestation_id, verified_at, expires_at)
        VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
@@ -536,7 +536,7 @@ export async function upsertKiltCredential(params: {
       [params.userId, params.credentialHash, params.attestationId, params.expiresAt ?? null],
     );
 
-    const row = queryOne<KiltCredentialRow>(
+    const row = await queryOne<KiltCredentialRow>(
       db,
       "SELECT * FROM kilt_credentials WHERE user_id = ?",
       [params.userId],
@@ -555,8 +555,8 @@ export function isHumanVerified(credential: KiltCredentialRecord | null): boolea
 // ── Expiry sweep (call on cron or home page load) ─────────────────────────────
 
 export async function expireOverdueTasks(): Promise<number> {
-  return withWrite((db) => {
-    db.run(
+  return withWrite(async (db) => {
+    await dbRun(db,
       `UPDATE tasks
        SET status = 'expired'
        WHERE status IN ('open', 'assigned')
@@ -574,8 +574,8 @@ export async function submitTaskReview(input: {
   rating: number;
   comment?: string;
 }): Promise<TaskReviewRecord> {
-  return withWrite((db) => {
-    const task = queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [input.taskId]);
+  return withWrite(async (db) => {
+    const task = await queryOne<TaskRow>(db, "SELECT * FROM tasks WHERE id = ?", [input.taskId]);
     if (!task) throw new Error("Task not found");
     if (task.status !== "approved") throw new Error("Can only review approved tasks");
 
@@ -586,21 +586,21 @@ export async function submitTaskReview(input: {
     const role = isPoster ? "poster" : "worker";
     const revieweeId = isPoster ? task.assignee_id! : task.poster_id;
 
-    db.run(
+    await dbRun(db,
       `INSERT INTO task_reviews (task_id, reviewer_id, reviewee_id, role, rating, comment)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [input.taskId, input.reviewerId, revieweeId, role, input.rating, input.comment ?? null],
     );
 
-    const id = getLastInsertId(db);
-    const row = queryOne<TaskReviewRow>(db, "SELECT * FROM task_reviews WHERE id = ?", [id]);
+    const id = await getLastInsertId(db);
+    const row = await queryOne<TaskReviewRow>(db, "SELECT * FROM task_reviews WHERE id = ?", [id]);
     return mapReview(row!);
   });
 }
 
 export async function getTaskReviews(taskId: number): Promise<TaskReviewRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<TaskReviewRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TaskReviewRow>(
       db,
       "SELECT * FROM task_reviews WHERE task_id = ? ORDER BY created_at ASC",
       [taskId],
@@ -610,8 +610,8 @@ export async function getTaskReviews(taskId: number): Promise<TaskReviewRecord[]
 }
 
 export async function getUserReviews(userId: number): Promise<TaskReviewRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<TaskReviewRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TaskReviewRow>(
       db,
       "SELECT * FROM task_reviews WHERE reviewee_id = ? ORDER BY created_at DESC LIMIT 50",
       [userId],
@@ -628,35 +628,35 @@ export async function getUserTaskStats(userId: number): Promise<{
   totalEarnings: number;
   categoryBreakdown: Record<string, number>;
 }> {
-  return withRead((db) => {
-    const completed = queryOne<{ cnt: number }>(
+  return withRead(async (db) => {
+    const completed = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? AND status = 'approved'",
       [userId],
     );
-    const posted = queryOne<{ cnt: number }>(
+    const posted = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) as cnt FROM tasks WHERE poster_id = ?",
       [userId],
     );
-    const workerRating = queryOne<{ avg: number | null }>(
+    const workerRating = await queryOne<{ avg: number | null }>(
       db,
       "SELECT AVG(rating) as avg FROM task_reviews WHERE reviewee_id = ? AND role = 'poster'",
       [userId],
     );
-    const posterRating = queryOne<{ avg: number | null }>(
+    const posterRating = await queryOne<{ avg: number | null }>(
       db,
       "SELECT AVG(rating) as avg FROM task_reviews WHERE reviewee_id = ? AND role = 'worker'",
       [userId],
     );
-    const earnings = queryOne<{ total: number | null }>(
+    const earnings = await queryOne<{ total: number | null }>(
       db,
       "SELECT SUM(reward) as total FROM tasks WHERE assignee_id = ? AND status = 'approved'",
       [userId],
     );
 
     // Category breakdown for completed tasks
-    const catRows = queryAll<{ category: string; cnt: number }>(
+    const catRows = await queryAll<{ category: string; cnt: number }>(
       db,
       `SELECT category, COUNT(*) as cnt FROM tasks
        WHERE assignee_id = ? AND status = 'approved'
@@ -685,8 +685,8 @@ export async function listTasksByWorker(
   userId: number,
   limit = 20,
 ): Promise<TaskRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<TaskRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TaskRow>(
       db,
       "SELECT * FROM tasks WHERE assignee_id = ? ORDER BY id DESC LIMIT ?",
       [userId, limit],
@@ -699,8 +699,8 @@ export async function listTasksByPoster(
   userId: number,
   limit = 20,
 ): Promise<TaskRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<TaskRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TaskRow>(
       db,
       "SELECT * FROM tasks WHERE poster_id = ? ORDER BY id DESC LIMIT ?",
       [userId, limit],

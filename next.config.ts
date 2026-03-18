@@ -8,13 +8,8 @@ import fs from "fs";
 const projectRoot = fs.realpathSync(process.cwd());
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["sql.js", "@kiltprotocol/sdk-js"],
+  serverExternalPackages: ["@libsql/client", "@kiltprotocol/sdk-js"],
   outputFileTracingRoot: projectRoot,
-  // sql-wasm.wasm is loaded via a runtime path (locateFile callback) so NFT
-  // can't detect it automatically — include it explicitly.
-  outputFileTracingIncludes: {
-    "**": ["./node_modules/sql.js/dist/sql-wasm.wasm"],
-  },
   eslint: {
     ignoreDuringBuilds: true,
   },

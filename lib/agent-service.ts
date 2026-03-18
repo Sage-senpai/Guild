@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import crypto from "node:crypto";
 
-import { getLastInsertId, queryAll, queryOne, withRead, withWrite } from "@/lib/db";
+import { dbRun, getLastInsertId, queryAll, queryOne, withRead, withWrite } from "@/lib/db";
 import { AGENT_MODELS } from "@/lib/types";
 import type {
   AgentCardGradient,
@@ -198,8 +198,8 @@ export async function listAgents(options: {
   }
 
   const whereSql = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
-  return withRead((db) => {
-    const rows = queryAll<AgentRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<AgentRow>(
       db,
       `
         SELECT *
@@ -218,8 +218,8 @@ export async function listAgents(options: {
 }
 
 export async function listAgentsByCreator(creatorId: number): Promise<AgentRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<AgentRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<AgentRow>(
       db,
       `
         SELECT *
@@ -235,8 +235,8 @@ export async function listAgentsByCreator(creatorId: number): Promise<AgentRecor
 }
 
 export async function getAgentById(id: number): Promise<AgentRecord | null> {
-  return withRead((db) => {
-    const row = queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [id]);
+  return withRead(async (db) => {
+    const row = await queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [id]);
     return row ? mapAgent(row) : null;
   });
 }
@@ -253,25 +253,25 @@ export async function createAgent(input: {
   creatorId?: number;
   listingFee?: number;
 }): Promise<AgentRecord> {
-  return withWrite((db) => {
+  return withWrite(async (db) => {
     const creatorId = input.creatorId ?? DEMO_USER_ID;
     const fee = input.listingFee ?? 0;
 
     // Deduct listing fee if applicable
     if (fee > 0) {
-      const user = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [creatorId]);
+      const user = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [creatorId]);
       if (!user || Number(user.credits) < fee) {
         throw new Error("INSUFFICIENT_CREDITS");
       }
-      db.run("UPDATE users SET credits = credits - ? WHERE id = ?", [fee, creatorId]);
-      db.run(
+      await dbRun(db, "UPDATE users SET credits = credits - ? WHERE id = ?", [fee, creatorId]);
+      await dbRun(db,
         `INSERT INTO credit_ledger (user_id, kind, amount, reference_type, note)
          VALUES (?, 'run_debit', ?, 'agent_listing', ?)`,
         [creatorId, -fee, `Agent listing fee`],
       );
     }
 
-    db.run(
+    await dbRun(db,
       `
         INSERT INTO agents (
           name,
@@ -299,8 +299,8 @@ export async function createAgent(input: {
       ],
     );
 
-    const id = getLastInsertId(db);
-    const row = queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [id]);
+    const id = await getLastInsertId(db);
+    const row = await queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [id]);
     if (!row) {
       throw new Error("Failed to create agent");
     }
@@ -313,8 +313,8 @@ export async function attachKnowledgeFile(
   knowledgeLocalPath: string,
   knowledgeFilename: string,
 ): Promise<void> {
-  await withWrite((db) => {
-    db.run(
+  await withWrite(async (db) => {
+    await dbRun(db,
       `
         UPDATE agents
         SET knowledge_local_path = ?,
@@ -334,8 +334,8 @@ export async function applyPublishResult(params: {
   knowledgeUri: string | null;
   knowledgeTxHash: string | null;
 }): Promise<AgentRecord> {
-  return withWrite((db) => {
-    db.run(
+  return withWrite(async (db) => {
+    await dbRun(db,
       `
         UPDATE agents
         SET storage_hash = ?,
@@ -356,7 +356,7 @@ export async function applyPublishResult(params: {
       ],
     );
 
-    const row = queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [params.agentId]);
+    const row = await queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [params.agentId]);
     if (!row) {
       throw new Error("Agent not found after publish");
     }
@@ -366,25 +366,25 @@ export async function applyPublishResult(params: {
 }
 
 export async function getUserById(userId: number): Promise<UserRecord | null> {
-  return withRead((db) => {
-    const row = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [userId]);
+  return withRead(async (db) => {
+    const row = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [userId]);
     return row ? mapUser(row) : null;
   });
 }
 
 /** Find user by wallet or create with 100 starter credits. Returns user ID. */
 export async function getOrCreateUser(walletAddress: string): Promise<number> {
-  return withWrite((db) => {
+  return withWrite(async (db) => {
     const addr = walletAddress.toLowerCase();
-    const existing = queryOne<{ id: number }>(
+    const existing = await queryOne<{ id: number }>(
       db,
       "SELECT id FROM users WHERE wallet_address = ?",
       [addr],
     );
     if (existing) return existing.id;
 
-    db.run("INSERT INTO users (wallet_address, credits) VALUES (?, 100)", [addr]);
-    return getLastInsertId(db);
+    await dbRun(db, "INSERT INTO users (wallet_address, credits) VALUES (?, 100)", [addr]);
+    return await getLastInsertId(db);
   });
 }
 
@@ -398,8 +398,8 @@ export async function resolveUserId(request: Request): Promise<number> {
 }
 
 export async function listRunsForAgent(agentId: number): Promise<RunRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<RunRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<RunRow>(
       db,
       `
         SELECT *
@@ -415,8 +415,8 @@ export async function listRunsForAgent(agentId: number): Promise<RunRecord[]> {
 }
 
 export async function listRecentRuns(limit = 40): Promise<RunRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<RunRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<RunRow>(
       db,
       `
         SELECT *
@@ -437,13 +437,13 @@ export async function runAgentForUser(params: {
   output: string;
   computeMode: string;
 }): Promise<{ run: RunRecord; user: UserRecord }> {
-  return withWrite((db) => {
-    const user = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
+  return withWrite(async (db) => {
+    const user = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
     if (!user) {
       throw new Error("User not found");
     }
 
-    const agent = queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [params.agentId]);
+    const agent = await queryOne<AgentRow>(db, "SELECT * FROM agents WHERE id = ?", [params.agentId]);
     if (!agent) {
       throw new Error("Agent not found");
     }
@@ -454,8 +454,8 @@ export async function runAgentForUser(params: {
       throw new Error("INSUFFICIENT_CREDITS");
     }
 
-    db.run("UPDATE users SET credits = credits - ? WHERE id = ?", [price, params.userId]);
-    db.run(
+    await dbRun(db, "UPDATE users SET credits = credits - ? WHERE id = ?", [price, params.userId]);
+    await dbRun(db,
       `
         INSERT INTO runs (user_id, agent_id, input, output, cost, compute_mode)
         VALUES (?, ?, ?, ?, ?, ?);
@@ -463,8 +463,8 @@ export async function runAgentForUser(params: {
       [params.userId, params.agentId, params.input, params.output, price, params.computeMode],
     );
 
-    const runId = getLastInsertId(db);
-    db.run(
+    const runId = await getLastInsertId(db);
+    await dbRun(db,
       `
         INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
         VALUES (?, 'run_debit', ?, 'run', ?, ?);
@@ -472,8 +472,8 @@ export async function runAgentForUser(params: {
       [params.userId, -price, runId, `Agent ${params.agentId} run`],
     );
 
-    const runRow = queryOne<RunRow>(db, "SELECT * FROM runs WHERE id = ?", [runId]);
-    const userRow = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
+    const runRow = await queryOne<RunRow>(db, "SELECT * FROM runs WHERE id = ?", [runId]);
+    const userRow = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
 
     if (!runRow || !userRow) {
       throw new Error("Failed to persist run");
@@ -484,8 +484,8 @@ export async function runAgentForUser(params: {
 }
 
 export async function listCreditLedgerForUser(userId: number, limit = 50): Promise<CreditLedgerRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<CreditLedgerRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<CreditLedgerRow>(
       db,
       `
         SELECT *
@@ -501,8 +501,8 @@ export async function listCreditLedgerForUser(userId: number, limit = 50): Promi
 }
 
 export async function listTopupOrdersForUser(userId: number, limit = 50): Promise<TopupOrderRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<TopupOrderRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<TopupOrderRow>(
       db,
       `
         SELECT *
@@ -523,9 +523,9 @@ export async function createTopupOrder(params: {
   currency: string;
   amount: number;
 }): Promise<TopupOrderRecord> {
-  return withWrite((db) => {
+  return withWrite(async (db) => {
     const providerReference = `topup_${crypto.randomUUID()}`;
-    db.run(
+    await dbRun(db,
       `
         INSERT INTO topup_orders (user_id, rail, currency, amount, credits, status, provider_reference)
         VALUES (?, ?, ?, ?, ?, 'pending', ?);
@@ -533,8 +533,8 @@ export async function createTopupOrder(params: {
       [params.userId, params.rail, params.currency, params.amount, params.amount, providerReference],
     );
 
-    const id = getLastInsertId(db);
-    const row = queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [id]);
+    const id = await getLastInsertId(db);
+    const row = await queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [id]);
     if (!row) {
       throw new Error("Failed to create top-up order");
     }
@@ -550,13 +550,13 @@ export async function completeOnchainTopup(params: {
   currency: string;
   amount: number;
 }): Promise<{ order: TopupOrderRecord; user: UserRecord; created: boolean }> {
-  return withWrite((db) => {
-    const user = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
+  return withWrite(async (db) => {
+    const user = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
     if (!user) {
       throw new Error("User not found");
     }
 
-    const existing = queryOne<TopupOrderRow>(
+    const existing = await queryOne<TopupOrderRow>(
       db,
       "SELECT * FROM topup_orders WHERE provider_reference = ?",
       [params.txHash],
@@ -570,7 +570,7 @@ export async function completeOnchainTopup(params: {
       };
     }
 
-    db.run(
+    await dbRun(db,
       `
         INSERT INTO topup_orders (
           user_id,
@@ -587,10 +587,10 @@ export async function completeOnchainTopup(params: {
       [params.userId, params.currency, params.amount, params.amount, params.txHash],
     );
 
-    const topupId = getLastInsertId(db);
+    const topupId = await getLastInsertId(db);
 
-    db.run("UPDATE users SET credits = credits + ? WHERE id = ?", [params.amount, params.userId]);
-    db.run(
+    await dbRun(db, "UPDATE users SET credits = credits + ? WHERE id = ?", [params.amount, params.userId]);
+    await dbRun(db,
       `
         INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
         VALUES (?, 'topup', ?, 'topup_order', ?, ?);
@@ -603,8 +603,8 @@ export async function completeOnchainTopup(params: {
       ],
     );
 
-    const order = queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [topupId]);
-    const updatedUser = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
+    const order = await queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [topupId]);
+    const updatedUser = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [params.userId]);
 
     if (!order || !updatedUser) {
       throw new Error("Failed to persist onchain top-up");
@@ -619,8 +619,8 @@ export async function completeOnchainTopup(params: {
 }
 
 export async function getTopupOrderById(id: number): Promise<TopupOrderRecord | null> {
-  return withRead((db) => {
-    const row = queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [id]);
+  return withRead(async (db) => {
+    const row = await queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [id]);
     return row ? mapTopupOrder(row) : null;
   });
 }
@@ -630,8 +630,8 @@ export async function reconcileTopupOrder(params: {
   status: "completed" | "failed";
   note?: string;
 }): Promise<TopupOrderRecord> {
-  return withWrite((db) => {
-    const order = queryOne<TopupOrderRow>(
+  return withWrite(async (db) => {
+    const order = await queryOne<TopupOrderRow>(
       db,
       "SELECT * FROM topup_orders WHERE provider_reference = ?",
       [params.providerReference],
@@ -645,15 +645,15 @@ export async function reconcileTopupOrder(params: {
     }
 
     if (params.status === "completed") {
-      db.run("UPDATE users SET credits = credits + ? WHERE id = ?", [order.credits, order.user_id]);
-      db.run(
+      await dbRun(db, "UPDATE users SET credits = credits + ? WHERE id = ?", [order.credits, order.user_id]);
+      await dbRun(db,
         `
           INSERT INTO credit_ledger (user_id, kind, amount, reference_type, reference_id, note)
           VALUES (?, 'topup', ?, 'topup_order', ?, ?);
         `,
         [order.user_id, order.credits, order.id, params.note ?? `${order.rail} top-up`],
       );
-      db.run(
+      await dbRun(db,
         `
           UPDATE topup_orders
           SET status = 'completed',
@@ -663,7 +663,7 @@ export async function reconcileTopupOrder(params: {
         [order.id],
       );
     } else {
-      db.run(
+      await dbRun(db,
         `
           UPDATE topup_orders
           SET status = 'failed',
@@ -674,7 +674,7 @@ export async function reconcileTopupOrder(params: {
       );
     }
 
-    const updated = queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [order.id]);
+    const updated = await queryOne<TopupOrderRow>(db, "SELECT * FROM topup_orders WHERE id = ?", [order.id]);
     if (!updated) {
       throw new Error("Top-up order missing after reconciliation");
     }
@@ -687,18 +687,18 @@ export async function getCreditStats(userId: number): Promise<{
   used: number;
   toppedUp: number;
 }> {
-  return withRead((db) => {
-    const user = queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [userId]);
+  return withRead(async (db) => {
+    const user = await queryOne<UserRow>(db, "SELECT * FROM users WHERE id = ?", [userId]);
     if (!user) {
       throw new Error("User not found");
     }
 
-    const usedRow = queryOne<{ total: number | null }>(
+    const usedRow = await queryOne<{ total: number | null }>(
       db,
       "SELECT SUM(cost) AS total FROM runs WHERE user_id = ?",
       [userId],
     );
-    const toppedUpRow = queryOne<{ total: number | null }>(
+    const toppedUpRow = await queryOne<{ total: number | null }>(
       db,
       "SELECT SUM(amount) AS total FROM credit_ledger WHERE user_id = ? AND kind = 'topup'",
       [userId],

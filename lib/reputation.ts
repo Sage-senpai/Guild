@@ -1,4 +1,4 @@
-import { queryAll, queryOne, withRead, withWrite } from "@/lib/db";
+import { dbRun, queryAll, queryOne, withRead, withWrite } from "@/lib/db";
 import {
   FREE_AGENT_SLOTS,
   AGENT_MODELS,
@@ -102,8 +102,8 @@ export async function submitReview(params: {
   rating: number;
   comment: string | null;
 }): Promise<AgentReviewRecord> {
-  return withWrite((db) => {
-    const existingRun = queryOne<{ id: number; user_id: number; agent_id: number }>(
+  return withWrite(async (db) => {
+    const existingRun = await queryOne<{ id: number; user_id: number; agent_id: number }>(
       db,
       "SELECT id, user_id, agent_id FROM runs WHERE id = ?",
       [params.runId],
@@ -112,21 +112,21 @@ export async function submitReview(params: {
     if (existingRun.user_id !== params.userId) throw new Error("You can only review your own runs");
     if (existingRun.agent_id !== params.agentId) throw new Error("Run does not belong to this agent");
 
-    const existing = queryOne<{ id: number }>(
+    const existing = await queryOne<{ id: number }>(
       db,
       "SELECT id FROM agent_reviews WHERE run_id = ?",
       [params.runId],
     );
     if (existing) throw new Error("You have already reviewed this run");
 
-    db.run(
+    await dbRun(db,
       `INSERT INTO agent_reviews (agent_id, user_id, run_id, rating, comment)
        VALUES (?, ?, ?, ?, ?)`,
       [params.agentId, params.userId, params.runId, params.rating, params.comment],
     );
 
     // Update cached avg_rating and total_reviews on agents table
-    db.run(
+    await dbRun(db,
       `UPDATE agents
        SET avg_rating = (SELECT ROUND(AVG(rating), 2) FROM agent_reviews WHERE agent_id = ?),
            total_reviews = (SELECT COUNT(*) FROM agent_reviews WHERE agent_id = ?)
@@ -135,23 +135,23 @@ export async function submitReview(params: {
     );
 
     // Auto-flag/suspend based on rating
-    const stats = queryOne<{ avg: number; cnt: number }>(
+    const stats = await queryOne<{ avg: number; cnt: number }>(
       db,
       "SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM agent_reviews WHERE agent_id = ?",
       [params.agentId],
     );
     if (stats && stats.cnt >= 10 && stats.avg < 1.5) {
-      db.run("UPDATE agents SET listing_status = 'suspended' WHERE id = ?", [params.agentId]);
+      await dbRun(db, "UPDATE agents SET listing_status = 'suspended' WHERE id = ?", [params.agentId]);
     } else if (stats && stats.cnt >= 5 && stats.avg < 2.0) {
-      db.run("UPDATE agents SET listing_status = 'flagged' WHERE id = ?", [params.agentId]);
+      await dbRun(db, "UPDATE agents SET listing_status = 'flagged' WHERE id = ?", [params.agentId]);
     }
 
-    const reviewId = queryOne<{ id: number }>(
+    const reviewId = await queryOne<{ id: number }>(
       db,
       "SELECT last_insert_rowid() AS id",
     );
     if (!reviewId) throw new Error("Failed to create review");
-    const row = queryOne<ReviewRow>(
+    const row = await queryOne<ReviewRow>(
       db,
       "SELECT * FROM agent_reviews WHERE id = ?",
       [reviewId.id],
@@ -162,8 +162,8 @@ export async function submitReview(params: {
 }
 
 export async function listReviewsForAgent(agentId: number, limit = 25): Promise<AgentReviewRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<ReviewRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<ReviewRow>(
       db,
       `SELECT * FROM agent_reviews WHERE agent_id = ? ORDER BY created_at DESC LIMIT ?`,
       [agentId, limit],
@@ -177,15 +177,15 @@ export async function getAgentRatingStats(agentId: number): Promise<{
   totalReviews: number;
   distribution: Record<number, number>;
 }> {
-  return withRead((db) => {
-    const stats = queryOne<{ avg: number | null; cnt: number }>(
+  return withRead(async (db) => {
+    const stats = await queryOne<{ avg: number | null; cnt: number }>(
       db,
       "SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM agent_reviews WHERE agent_id = ?",
       [agentId],
     );
 
     const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    const rows = queryAll<{ rating: number; cnt: number }>(
+    const rows = await queryAll<{ rating: number; cnt: number }>(
       db,
       "SELECT rating, COUNT(*) AS cnt FROM agent_reviews WHERE agent_id = ? GROUP BY rating",
       [agentId],
@@ -205,22 +205,22 @@ export async function getAgentRatingStats(agentId: number): Promise<{
 // ── Badge Computation ───────────────────────────────────────────────────────
 
 export async function computeAndAwardBadges(userId: number): Promise<UserBadgeRecord[]> {
-  return withWrite((db) => {
+  return withWrite(async (db) => {
     const awarded: UserBadgeRecord[] = [];
 
-    function awardBadge(badgeType: string, tier: "agent" | "human", category: string | null = null) {
-      const existing = queryOne<{ id: number }>(
+    async function awardBadge(badgeType: string, tier: "agent" | "human", category: string | null = null) {
+      const existing = await queryOne<{ id: number }>(
         db,
         "SELECT id FROM user_badges WHERE user_id = ? AND badge_type = ? AND (category = ? OR (category IS NULL AND ? IS NULL))",
         [userId, badgeType, category, category],
       );
       if (existing) return;
 
-      db.run(
+      await dbRun(db,
         "INSERT INTO user_badges (user_id, badge_type, badge_tier, category) VALUES (?, ?, ?, ?)",
         [userId, badgeType, tier, category],
       );
-      const row = queryOne<BadgeRow>(
+      const row = await queryOne<BadgeRow>(
         db,
         "SELECT * FROM user_badges WHERE user_id = ? AND badge_type = ? AND (category = ? OR (category IS NULL AND ? IS NULL))",
         [userId, badgeType, category, category],
@@ -230,14 +230,14 @@ export async function computeAndAwardBadges(userId: number): Promise<UserBadgeRe
 
     // ── Agent badges ──
 
-    const publishedCount = queryOne<{ cnt: number }>(
+    const publishedCount = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM agents WHERE creator_id = ? AND published = 1",
       [userId],
     );
 
     // Check reviews across all the user's agents
-    const creatorReviewStats = queryOne<{ avg: number | null; cnt: number }>(
+    const creatorReviewStats = await queryOne<{ avg: number | null; cnt: number }>(
       db,
       `SELECT AVG(r.rating) AS avg, COUNT(*) AS cnt
        FROM agent_reviews r
@@ -247,40 +247,40 @@ export async function computeAndAwardBadges(userId: number): Promise<UserBadgeRe
     );
 
     if (creatorReviewStats && creatorReviewStats.cnt >= 10 && (creatorReviewStats.avg ?? 0) >= 4.0) {
-      awardBadge("rising_star", "agent");
+      await awardBadge("rising_star", "agent");
     }
     if (creatorReviewStats && creatorReviewStats.cnt >= 25 && (creatorReviewStats.avg ?? 0) >= 4.5) {
-      awardBadge("top_rated", "agent");
+      await awardBadge("top_rated", "agent");
     }
     if ((publishedCount?.cnt ?? 0) >= 5) {
-      awardBadge("power_creator", "agent");
+      await awardBadge("power_creator", "agent");
     }
 
     // Verified creator — user has valid KILT credential
-    const kilt = queryOne<{ id: number }>(
+    const kilt = await queryOne<{ id: number }>(
       db,
       "SELECT id FROM kilt_credentials WHERE user_id = ?",
       [userId],
     );
     if (kilt) {
-      awardBadge("verified_creator", "agent");
-      awardBadge("verified_human", "human");
+      await awardBadge("verified_creator", "agent");
+      await awardBadge("verified_human", "human");
     }
 
     // ── Human badges ──
 
-    const tasksCompleted = queryOne<{ cnt: number }>(
+    const tasksCompleted = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'approved'",
       [userId],
     );
     const cnt = tasksCompleted?.cnt ?? 0;
 
-    if (cnt >= 1) awardBadge("first_task", "human");
-    if (cnt >= 10) awardBadge("reliable", "human");
+    if (cnt >= 1) await awardBadge("first_task", "human");
+    if (cnt >= 10) await awardBadge("reliable", "human");
 
     // Specialist — 20+ tasks in one category
-    const categoryStats = queryAll<{ category: string; cnt: number }>(
+    const categoryStats = await queryAll<{ category: string; cnt: number }>(
       db,
       `SELECT category, COUNT(*) AS cnt
        FROM tasks
@@ -290,18 +290,18 @@ export async function computeAndAwardBadges(userId: number): Promise<UserBadgeRe
       [userId],
     );
     for (const cat of categoryStats) {
-      awardBadge("specialist", "human", cat.category);
+      await awardBadge("specialist", "human", cat.category);
     }
 
     // Top worker — 50+ tasks, 90%+ approval rate
-    const totalAssigned = queryOne<{ cnt: number }>(
+    const totalAssigned = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status IN ('approved', 'disputed')",
       [userId],
     );
     const totalDone = totalAssigned?.cnt ?? 0;
     if (cnt >= 50 && totalDone > 0 && (cnt / totalDone) >= 0.9) {
-      awardBadge("top_worker", "human");
+      await awardBadge("top_worker", "human");
     }
 
     return awarded;
@@ -309,8 +309,8 @@ export async function computeAndAwardBadges(userId: number): Promise<UserBadgeRe
 }
 
 export async function getUserBadges(userId: number): Promise<UserBadgeRecord[]> {
-  return withRead((db) => {
-    const rows = queryAll<BadgeRow>(
+  return withRead(async (db) => {
+    const rows = await queryAll<BadgeRow>(
       db,
       "SELECT * FROM user_badges WHERE user_id = ? ORDER BY earned_at DESC",
       [userId],
@@ -322,21 +322,21 @@ export async function getUserBadges(userId: number): Promise<UserBadgeRecord[]> 
 // ── Integrity Score ─────────────────────────────────────────────────────────
 
 export async function recalculateIntegrity(userId: number): Promise<number> {
-  return withWrite((db) => {
+  return withWrite(async (db) => {
     // Base score
     let score = 80;
 
-    const approved = queryOne<{ cnt: number }>(
+    const approved = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'approved'",
       [userId],
     );
-    const disputed = queryOne<{ cnt: number }>(
+    const disputed = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'disputed'",
       [userId],
     );
-    const expired = queryOne<{ cnt: number }>(
+    const expired = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'expired'",
       [userId],
@@ -354,7 +354,7 @@ export async function recalculateIntegrity(userId: number): Promise<number> {
     // Clamp 0–100
     score = Math.max(0, Math.min(100, score));
 
-    db.run("UPDATE users SET integrity_score = ? WHERE id = ?", [score, userId]);
+    await dbRun(db, "UPDATE users SET integrity_score = ? WHERE id = ?", [score, userId]);
     return score;
   });
 }
@@ -362,35 +362,35 @@ export async function recalculateIntegrity(userId: number): Promise<number> {
 // ── User Reputation Stats ───────────────────────────────────────────────────
 
 export async function getUserReputation(userId: number): Promise<UserReputationStats> {
-  return withRead((db) => {
-    const user = queryOne<{ integrity_score: number }>(
+  return withRead(async (db) => {
+    const user = await queryOne<{ integrity_score: number }>(
       db,
       "SELECT integrity_score FROM users WHERE id = ?",
       [userId],
     );
 
-    const tasksCompleted = queryOne<{ cnt: number }>(
+    const tasksCompleted = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'approved'",
       [userId],
     );
-    const tasksDisputed = queryOne<{ cnt: number }>(
+    const tasksDisputed = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE assignee_id = ? AND status = 'disputed'",
       [userId],
     );
-    const tasksPosted = queryOne<{ cnt: number }>(
+    const tasksPosted = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM tasks WHERE poster_id = ?",
       [userId],
     );
-    const agentsPublished = queryOne<{ cnt: number }>(
+    const agentsPublished = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM agents WHERE creator_id = ? AND published = 1",
       [userId],
     );
 
-    const badges = queryAll<BadgeRow>(
+    const badges = await queryAll<BadgeRow>(
       db,
       "SELECT * FROM user_badges WHERE user_id = ?",
       [userId],
@@ -406,7 +406,7 @@ export async function getUserReputation(userId: number): Promise<UserReputationS
       }
     }
 
-    const catRows = queryAll<{ category: string; cnt: number }>(
+    const catRows = await queryAll<{ category: string; cnt: number }>(
       db,
       `SELECT category, COUNT(*) AS cnt
        FROM tasks
@@ -435,8 +435,8 @@ export async function getUserReputation(userId: number): Promise<UserReputationS
 // ── Agent Listing Slot Check ────────────────────────────────────────────────
 
 export async function getCreatorAgentCount(creatorId: number): Promise<number> {
-  return withRead((db) => {
-    const row = queryOne<{ cnt: number }>(
+  return withRead(async (db) => {
+    const row = await queryOne<{ cnt: number }>(
       db,
       "SELECT COUNT(*) AS cnt FROM agents WHERE creator_id = ?",
       [creatorId],
