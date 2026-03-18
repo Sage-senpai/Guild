@@ -183,9 +183,7 @@ export async function listAgents(options: {
   where.push("listing_status != 'suspended'");
 
   if (!options.includeDrafts) {
-    where.push(
-      "published = 1 AND storage_hash IS NOT NULL AND manifest_uri IS NOT NULL AND manifest_tx_hash IS NOT NULL",
-    );
+    where.push("published = 1");
   }
 
   if (options.search?.trim()) {
