@@ -3,13 +3,13 @@ import { z } from "zod";
 import { AGENT_CARD_GRADIENTS, AGENT_CATEGORIES, AGENT_MODELS, TASK_CATEGORIES } from "@/lib/types";
 
 export const createAgentSchema = z.object({
-  name: z.string().trim().min(3).max(80),
-  description: z.string().trim().min(10).max(400),
+  name: z.string().trim().min(2).max(80),
+  description: z.string().trim().min(3).max(400),
   category: z.enum(AGENT_CATEGORIES),
-  model: z.enum(AGENT_MODELS).default("openrouter/free"),
-  systemPrompt: z.string().trim().min(10).max(5000),
+  model: z.string().default("openrouter/free"),
+  systemPrompt: z.string().trim().min(5).max(5000),
   pricePerRun: z.coerce.number().min(0).max(1000),
-  cardGradient: z.enum(AGENT_CARD_GRADIENTS).default("aurora"),
+  cardGradient: z.string().default("aurora"),
   publishNow: z.coerce.boolean().default(true),
 });
 
@@ -49,8 +49,8 @@ export const createOnchainTopupSchema = z.object({
 // ── Human Task Marketplace ──────────────────────────────────────────────────
 
 export const createTaskSchema = z.object({
-  title: z.string().trim().min(10).max(120),
-  description: z.string().trim().min(20).max(1000),
+  title: z.string().trim().min(3).max(120),
+  description: z.string().trim().min(5).max(1000),
   category: z.enum(TASK_CATEGORIES),
   taskType: z.enum(["instant", "apply"]).default("instant"),
   reward: z.coerce.number().min(0.5).max(50),

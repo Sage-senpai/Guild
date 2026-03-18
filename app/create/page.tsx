@@ -203,7 +203,7 @@ function CreateAgentForm() {
               id="name"
               name="name"
               required
-              minLength={3}
+              minLength={2}
               maxLength={80}
               className="w-full rounded-xl border border-ink/20 px-3 py-2 outline-none ring-flare transition focus:ring-2"
               placeholder="Gen-Z Copywriter"
@@ -218,7 +218,7 @@ function CreateAgentForm() {
               id="description"
               name="description"
               required
-              minLength={10}
+              minLength={3}
               maxLength={400}
               rows={3}
               className="w-full rounded-xl border border-ink/20 px-3 py-2 outline-none ring-flare transition focus:ring-2"
@@ -308,7 +308,7 @@ function CreateAgentForm() {
               id="system_prompt"
               name="system_prompt"
               required
-              minLength={10}
+              minLength={5}
               maxLength={5000}
               rows={7}
               className="w-full rounded-xl border border-ink/20 px-3 py-2 outline-none ring-flare transition focus:ring-2"

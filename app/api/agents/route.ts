@@ -7,6 +7,7 @@ import { createAgent, resolveUserId, getUserById, listAgents, attachKnowledgeFil
 import { resolveDataPath } from "@/lib/data-dir";
 import { publishAgent } from "@/lib/publish-agent";
 import { calculateListingFee, getCreatorAgentCount } from "@/lib/reputation";
+import type { AgentCardGradient, AgentModel } from "@/lib/types";
 import { listAgentsSchema, createAgentSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     creatorAgentCount: agentCount,
     systemPromptLength: payload.data.systemPrompt.length,
     pricePerRun: payload.data.pricePerRun,
-    model: payload.data.model,
+    model: payload.data.model as AgentModel,
   });
 
   if (listingFee.fee > 0) {
@@ -110,11 +111,11 @@ export async function POST(request: Request) {
       name: payload.data.name,
       description: payload.data.description,
       category: payload.data.category,
-      model: payload.data.model,
+      model: payload.data.model as AgentModel,
       systemPrompt: payload.data.systemPrompt,
       pricePerRun: payload.data.pricePerRun,
       cardImageDataUrl,
-      cardGradient: payload.data.cardGradient,
+      cardGradient: payload.data.cardGradient as AgentCardGradient,
       creatorId,
       listingFee: listingFee.fee,
     });
